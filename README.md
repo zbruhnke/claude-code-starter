@@ -587,10 +587,13 @@ for f in .claude/settings.json stacks/*/settings.json; do jq . "$f" > /dev/null;
 ```bash
 git tag -a v0.2.0 -m "v0.2.0 - Brief description"
 git push origin v0.2.0
-# GitHub Actions automatically creates the release
+# GitHub Actions automatically validates, generates notes, and creates the release
 ```
 
-Versioning: `v0.x.y` for pre-1.0, semver after. Tags starting with `v0.` are marked as pre-release.
+Versioning:
+- `v0.x.y` during pre-1.0 development
+- Semver (`vX.Y.Z`) after 1.0
+- Add `-alpha`, `-beta`, `-rc.1` suffix for pre-releases (e.g., `v1.0.0-rc.1`)
 
 ---
 
