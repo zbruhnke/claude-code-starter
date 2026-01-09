@@ -415,6 +415,27 @@ interactive_mode() {
 # Main
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Handle help before any other checks
+if [ $# -gt 0 ] && [[ "$1" == "-h" || "$1" == "--help" || "$1" == "help" ]]; then
+  echo "Usage: adopt.sh [component]"
+  echo ""
+  echo "Components:"
+  echo "  skills      Install custom skills"
+  echo "  agents      Install specialized agents"
+  echo "  hooks       Install security/formatting hooks"
+  echo "  rules       Install reference documentation"
+  echo "  precommit   Install pre-commit review hook"
+  echo "  security    Install security configuration"
+  echo "  stack       Install stack-specific preset"
+  echo "  all         Install everything"
+  echo ""
+  echo "  skill <name>   Install a specific skill"
+  echo "  agent <name>   Install a specific agent"
+  echo ""
+  echo "Without arguments, runs interactive mode."
+  exit 0
+fi
+
 # Check we're not in the starter repo itself
 if [ "$TARGET_DIR" = "$SCRIPT_DIR" ]; then
   print_error "Cannot adopt into the starter repo itself"
@@ -456,24 +477,6 @@ else
         exit 1
       fi
       install_single_agent "$2"
-      ;;
-    -h|--help|help)
-      echo "Usage: adopt.sh [component]"
-      echo ""
-      echo "Components:"
-      echo "  skills      Install custom skills"
-      echo "  agents      Install specialized agents"
-      echo "  hooks       Install security and formatting hooks"
-      echo "  rules       Install reference documentation"
-      echo "  precommit   Install pre-commit review hook"
-      echo "  security    Install security configuration"
-      echo "  stack       Install stack-specific preset"
-      echo "  all         Install everything"
-      echo ""
-      echo "  skill <name>   Install a specific skill"
-      echo "  agent <name>   Install a specific agent"
-      echo ""
-      echo "Without arguments, runs interactive mode."
       ;;
     *)
       print_error "Unknown component: $1"
