@@ -176,8 +176,19 @@ git push origin v0.2.0
 
 # GitHub Actions automatically:
 # - Runs validation (shellcheck, syntax, JSON)
+# - Generates SHA256 checksums for scripts
 # - Generates release notes from commits
 # - Creates GitHub release
+```
+
+**Signed tags (recommended for production releases):**
+```bash
+# Requires GPG key configured with git
+git tag -s v1.0.0 -m "v1.0.0 - Production release"
+git push origin v1.0.0
+
+# Verify a signed tag
+git tag -v v1.0.0
 ```
 
 Versioning:

@@ -48,6 +48,17 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
+      - name: Generate checksums
+        id: checksums
+        run: |
+          echo "Generating SHA256 checksums..."
+          SETUP_SHA=$(sha256sum setup.sh | cut -d' ' -f1)
+          ADOPT_SHA=$(sha256sum adopt.sh | cut -d' ' -f1)
+          REVIEW_SHA=$(sha256sum review-mr.sh | cut -d' ' -f1)
+          echo "setup_sha=$SETUP_SHA" >> $GITHUB_OUTPUT
+          echo "adopt_sha=$ADOPT_SHA" >> $GITHUB_OUTPUT
+          echo "review_sha=$REVIEW_SHA" >> $GITHUB_OUTPUT
+
       - name: Generate release notes
         id: notes
         run: |
@@ -70,11 +81,11 @@ jobs:
 
           echo "$COMMITS" >> release_notes.md
 
-          cat >> release_notes.md << 'NOTES_EOF'
+          cat >> release_notes.md << NOTES_EOF
 
           ## Installation
 
-          ```bash
+          \`\`\`bash
           # New project
           git clone https://github.com/${{ github.repository }}.git my-project
           cd my-project && ./setup.sh
@@ -82,7 +93,19 @@ jobs:
           # Existing project (pinned to this release)
           curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.version.outputs.version }}/setup.sh -o setup.sh
           less setup.sh && chmod +x setup.sh && ./setup.sh
-          ```
+          \`\`\`
+
+          ## Checksums (SHA256)
+
+          Verify downloaded scripts match these checksums:
+
+          \`\`\`
+          ${{ steps.checksums.outputs.setup_sha }}  setup.sh
+          ${{ steps.checksums.outputs.adopt_sha }}  adopt.sh
+          ${{ steps.checksums.outputs.review_sha }}  review-mr.sh
+          \`\`\`
+
+          Verify with: \`sha256sum -c <<< "CHECKSUM  FILENAME"\`
 
           ## Documentation
 
