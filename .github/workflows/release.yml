@@ -14,7 +14,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: sudo apt-get install -y shellcheck jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck jq
 
       - name: Run shellcheck
         run: |
@@ -32,6 +34,31 @@ jobs:
           for f in .claude/settings.json stacks/*/settings.json; do
             jq . "$f" > /dev/null
           done
+
+      - name: Smoke test setup.sh
+        run: |
+          mkdir -p /tmp/test-project
+          cd /tmp/test-project
+          git init
+
+          # Run setup non-interactively - capture exit code properly
+          set +e
+          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb timeout 30 bash "$GITHUB_WORKSPACE/setup.sh"
+          EXIT_CODE=$?
+          set -e
+
+          if [ "$EXIT_CODE" -eq 124 ]; then
+            echo "::error::setup.sh timed out"
+            exit 1
+          elif [ "$EXIT_CODE" -ne 0 ]; then
+            echo "::error::setup.sh failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+
+          # Verify key files
+          test -f CLAUDE.md || { echo "::error::CLAUDE.md not created"; exit 1; }
+          test -f .claude/settings.json || { echo "::error::settings.json not created"; exit 1; }
+          echo "✓ Smoke test passed"
 
   release:
     name: Create Release
@@ -62,8 +89,8 @@ jobs:
       - name: Generate release notes
         id: notes
         run: |
-          # Get the previous tag
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          # Get the previous tag (more robust method)
+          PREV_TAG=$(git tag --sort=-creatordate | grep -v "^${{ steps.version.outputs.version }}$" | head -n 1 || echo "")
 
           if [ -n "$PREV_TAG" ]; then
             echo "Generating notes from $PREV_TAG to ${{ steps.version.outputs.version }}"
@@ -105,7 +132,9 @@ jobs:
           ${{ steps.checksums.outputs.review_sha }}  review-mr.sh
           \`\`\`
 
-          Verify with: \`sha256sum -c <<< "CHECKSUM  FILENAME"\`
+          Verify with:
+          - Linux: \`echo "CHECKSUM  setup.sh" | sha256sum -c -\`
+          - macOS: \`echo "CHECKSUM  setup.sh" | shasum -a 256 -c -\`
 
           ## Documentation
 

@@ -200,8 +200,11 @@ curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/v0.1.0
 
 **Verify downloads** with SHA256 checksums (included in each release's notes):
 ```bash
-# Check against checksum from release notes
-sha256sum setup.sh
+# Linux
+echo "CHECKSUM  setup.sh" | sha256sum -c -
+
+# macOS
+echo "CHECKSUM  setup.sh" | shasum -a 256 -c -
 ```
 
 See [Releases](https://github.com/zbruhnke/claude-code-starter/releases) for all versions and checksums.
