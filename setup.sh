@@ -16,10 +16,10 @@ if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
   echo ""
   echo "On macOS, install newer bash with Homebrew:"
   echo "  brew install bash"
-  echo "  /opt/homebrew/bin/bash $0"
+  echo "  \$(brew --prefix)/bin/bash $0"
   echo ""
   echo "Or add to your shell config:"
-  echo "  export PATH=\"/opt/homebrew/bin:\$PATH\""
+  echo "  export PATH=\"\$(brew --prefix)/bin:\$PATH\""
   exit 1
 fi
 
@@ -32,8 +32,13 @@ source "$SCRIPT_DIR/lib/common.sh"
 
 # Track what we've created for cleanup on failure
 CREATED_FILES=()
-CREATED_DIRS=()
 SETUP_COMPLETE=false
+
+# Track if .claude/ existed before we started
+PREEXISTING_CLAUDE_DIR=false
+if [ -d "$TARGET_DIR/.claude" ]; then
+  PREEXISTING_CLAUDE_DIR=true
+fi
 
 # Cleanup function for error handling
 # Note: Uses atomic operations to avoid TOCTOU vulnerabilities
@@ -56,14 +61,16 @@ cleanup_on_error() {
     fi
   done
 
-  # Remove created directories (only if empty and under TARGET_DIR)
-  for dir in "${CREATED_DIRS[@]}"; do
-    local resolved
-    resolved=$(cd "$dir" 2>/dev/null && pwd) || continue
-    if [[ "$resolved" == "$TARGET_DIR"/* ]]; then
-      rmdir "$dir" 2>/dev/null && echo -e "  ${DIM}Removed: $dir${NC}" || true
+  # Remove .claude/ directory if we created it (not pre-existing)
+  # This ensures partial .claude/ installs get cleaned up properly
+  if [ "$PREEXISTING_CLAUDE_DIR" = false ] && [ -d "$TARGET_DIR/.claude" ]; then
+    # Verify the path is safe before removing
+    local resolved_claude
+    resolved_claude=$(cd "$TARGET_DIR/.claude" 2>/dev/null && pwd) || true
+    if [[ "$resolved_claude" == "$TARGET_DIR/.claude" ]]; then
+      rm -rf "$TARGET_DIR/.claude" 2>/dev/null && echo -e "  ${DIM}Removed: .claude/${NC}"
     fi
-  done
+  fi
 
   echo ""
   echo -e "${YELLOW}Partial setup was rolled back. Please fix the issue and try again.${NC}"
@@ -73,13 +80,9 @@ cleanup_on_error() {
 trap cleanup_on_error ERR
 trap 'echo ""; echo -e "${RED}Setup interrupted${NC}"; cleanup_on_error; exit 1' INT TERM
 
-# Helper to track created files
+# Helper to track created files for cleanup
 track_file() {
   CREATED_FILES+=("$1")
-}
-
-track_dir() {
-  CREATED_DIRS+=("$1")
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -296,18 +299,11 @@ if prompt_yn "Install pre-commit review hook?" "n"; then INSTALL_PRECOMMIT_REVIE
 
 print_step "Step 5: Creating Configuration"
 
-# Create directories and track them for cleanup on failure
+# Create directories (.claude/ tracked at cleanup level, not individually)
 mkdir -p "$TARGET_DIR/.claude/rules"
 mkdir -p "$TARGET_DIR/.claude/skills"
 mkdir -p "$TARGET_DIR/.claude/agents"
 mkdir -p "$TARGET_DIR/.claude/hooks"
-
-# Track directories (reverse order for cleanup - deepest first)
-track_dir "$TARGET_DIR/.claude/hooks"
-track_dir "$TARGET_DIR/.claude/agents"
-track_dir "$TARGET_DIR/.claude/skills"
-track_dir "$TARGET_DIR/.claude/rules"
-track_dir "$TARGET_DIR/.claude"
 
 # Generate CLAUDE.md from stack template or create generic
 print_info "Creating CLAUDE.md..."
@@ -375,7 +371,7 @@ fi
 track_file "$TARGET_DIR/.claude/settings.json"
 print_success "Created .claude/settings.json ($STACK preset)"
 
-# Create .claudeignore
+# Create or update .claudeignore
 if [ ! -f "$TARGET_DIR/.claudeignore" ]; then
   print_info "Creating .claudeignore..."
   if [ -f "$SCRIPT_DIR/.claudeignore" ]; then
@@ -383,6 +379,36 @@ if [ ! -f "$TARGET_DIR/.claudeignore" ]; then
     track_file "$TARGET_DIR/.claudeignore"
   fi
   print_success "Created .claudeignore"
+else
+  # Append missing recommended patterns to existing .claudeignore
+  print_info "Updating .claudeignore with recommended patterns..."
+  CLAUDEIGNORE_UPDATED=false
+  # Essential patterns that prevent "my context is huge" issues
+  RECOMMENDED_PATTERNS=(
+    "node_modules/"
+    "vendor/"
+    ".venv/"
+    "venv/"
+    "__pycache__/"
+    "dist/"
+    "build/"
+    ".next/"
+    "coverage/"
+    "package-lock.json"
+    "yarn.lock"
+    "pnpm-lock.yaml"
+  )
+  for pattern in "${RECOMMENDED_PATTERNS[@]}"; do
+    if ! grep -q "^${pattern}$" "$TARGET_DIR/.claudeignore" 2>/dev/null; then
+      echo "$pattern" >> "$TARGET_DIR/.claudeignore"
+      CLAUDEIGNORE_UPDATED=true
+    fi
+  done
+  if [ "$CLAUDEIGNORE_UPDATED" = true ]; then
+    print_success "Added missing patterns to .claudeignore"
+  else
+    print_info ".claudeignore already has recommended patterns"
+  fi
 fi
 
 # Copy rules
@@ -480,8 +506,8 @@ echo "    • .claude/settings.json  - Permissions & hooks"
 [ "$INSTALL_PRECOMMIT_REVIEW" = true ] && echo "    • .git/hooks/pre-commit  - Pre-commit review"
 echo ""
 echo -e "  ${BOLD}Security features:${NC}"
-echo "    • Sensitive file blocking (.env, keys, secrets)"
-echo "    • Dangerous command prevention"
+echo "    • .env file blocking (read/edit/write)"
+echo "    • Dangerous command prevention (rm -rf, sudo, curl|bash)"
 echo "    • Pre-tool security gate hook"
 [ "$INSTALL_PRECOMMIT_REVIEW" = true ] && echo "    • Pre-commit review (understand before committing)"
 echo ""

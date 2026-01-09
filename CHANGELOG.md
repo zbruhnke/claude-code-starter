@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Incomplete rollback tracking: setup.sh now removes entire .claude/ directory on failure if it didn't exist before
+- Bash 4 error message now shows `$(brew --prefix)` instead of hardcoded `/opt/homebrew`
+- adopt.sh security merge guidance now matches actual deny patterns shipped in settings.json
+- setup.sh security summary no longer overclaims "keys, secrets" blocking (only .env files are blocked by default)
+
+### Changed
+- .claudeignore now appends missing recommended patterns instead of skipping when file exists
+
 ## [0.2.1] - 2025-01-09
 
 ### Fixed

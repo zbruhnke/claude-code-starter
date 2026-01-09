@@ -30,10 +30,10 @@ if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
   echo ""
   echo "On macOS, install newer bash with Homebrew:"
   echo "  brew install bash"
-  echo "  /opt/homebrew/bin/bash $0"
+  echo "  \$(brew --prefix)/bin/bash $0"
   echo ""
   echo "Or add to your shell config:"
-  echo "  export PATH=\"/opt/homebrew/bin:\$PATH\""
+  echo "  export PATH=\"\$(brew --prefix)/bin:\$PATH\""
   exit 1
 fi
 
@@ -201,10 +201,15 @@ install_security() {
     echo -e "  ${DIM}Add these deny rules to your settings.json:${NC}"
     echo '    "deny": ['
     echo '      "Read(.env)", "Read(.env.*)",'
-    echo '      "Read(**/*.pem)", "Read(**/*.key)",'
-    echo '      "Edit(.env)", "Write(.env)",'
-    echo '      "Bash(rm -rf /)", "Bash(sudo:*)"'
+    echo '      "Edit(.env)", "Edit(.env.*)",'
+    echo '      "Write(.env)", "Write(.env.*)",'
+    echo '      "Bash(rm -rf:*)", "Bash(rm -r:*)",'
+    echo '      "Bash(sudo:*)", "Bash(chmod 777:*)",'
+    echo '      "Bash(curl:*|bash)", "Bash(curl:*|sh)",'
+    echo '      "Bash(wget:*|bash)", "Bash(wget:*|sh)"'
     echo '    ]'
+    echo ""
+    echo -e "  ${DIM}See docs/permissions.md for additional patterns (*.pem, *.key, etc.)${NC}"
   else
     cp "$SCRIPT_DIR/.claude/settings.json" "$TARGET_DIR/.claude/settings.json"
     print_success "Created settings.json with security defaults"
