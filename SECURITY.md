@@ -11,12 +11,14 @@
 If you discover a security vulnerability in this project, please report it responsibly:
 
 1. **Do not** open a public GitHub issue for security vulnerabilities
-2. Email the maintainer directly or use GitHub's private vulnerability reporting
+2. **Use [GitHub Security Advisories](https://github.com/zbruhnke/claude-code-starter/security/advisories/new)** to report privately
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce
    - Potential impact
    - Suggested fix (if any)
+
+We will respond within 7 days and work with you on a fix before public disclosure.
 
 ## Security Model
 

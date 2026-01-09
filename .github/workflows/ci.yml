@@ -47,13 +47,25 @@ jobs:
           git init
 
           # Run setup non-interactively by providing inputs
-          # This tests that the script at least starts without errors
-          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | timeout 30 "$GITHUB_WORKSPACE/setup.sh" || true
+          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | timeout 30 "$GITHUB_WORKSPACE/setup.sh"
+          EXIT_CODE=$?
+
+          # Handle exit codes explicitly
+          if [ $EXIT_CODE -eq 124 ]; then
+            echo "::error::setup.sh timed out after 30 seconds"
+            exit 1
+          elif [ $EXIT_CODE -ne 0 ]; then
+            echo "::error::setup.sh failed with exit code $EXIT_CODE"
+            exit 1
+          fi
 
           # Verify key files were created
-          test -f CLAUDE.md && echo "✓ CLAUDE.md created"
-          test -d .claude && echo "✓ .claude directory created"
-          test -f .claude/settings.json && echo "✓ settings.json created"
+          test -f CLAUDE.md || { echo "::error::CLAUDE.md not created"; exit 1; }
+          echo "✓ CLAUDE.md created"
+          test -d .claude || { echo "::error::.claude directory not created"; exit 1; }
+          echo "✓ .claude directory created"
+          test -f .claude/settings.json || { echo "::error::settings.json not created"; exit 1; }
+          echo "✓ settings.json created"
 
       - name: Test adopt.sh help
         run: ./adopt.sh --help
