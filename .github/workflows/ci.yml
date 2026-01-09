@@ -31,12 +31,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install jq (required for hooks)
+      - name: Install dependencies
         run: |
           if [[ "$RUNNER_OS" == "Linux" ]]; then
             sudo apt-get install -y jq
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install jq || true  # May already be installed
+            brew install jq coreutils || true  # jq for hooks, coreutils for gtimeout
           fi
 
       - name: Check bash version
@@ -61,9 +61,15 @@ jobs:
           cd /tmp/test-project
           git init
 
+          # Use gtimeout on macOS, timeout on Linux
+          TIMEOUT_CMD="timeout"
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            TIMEOUT_CMD="gtimeout"
+          fi
+
           # Run setup non-interactively by providing inputs
           # TERM=dumb allows clear/tput commands to work in CI
-          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb timeout 30 "$GITHUB_WORKSPACE/setup.sh" || EXIT_CODE=$?
+          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb $TIMEOUT_CMD 30 "$GITHUB_WORKSPACE/setup.sh" || EXIT_CODE=$?
 
           # Handle exit codes explicitly
           if [ "${EXIT_CODE:-0}" -eq 124 ]; then
@@ -86,8 +92,14 @@ jobs:
         run: |
           cd /tmp/test-project
 
+          # Use gtimeout on macOS, timeout on Linux
+          TIMEOUT_CMD="timeout"
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            TIMEOUT_CMD="gtimeout"
+          fi
+
           # Run setup again - should not fail
-          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb timeout 30 "$GITHUB_WORKSPACE/setup.sh" || EXIT_CODE=$?
+          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb $TIMEOUT_CMD 30 "$GITHUB_WORKSPACE/setup.sh" || EXIT_CODE=$?
 
           if [ "${EXIT_CODE:-0}" -eq 124 ]; then
             echo "::error::setup.sh idempotency test timed out"
