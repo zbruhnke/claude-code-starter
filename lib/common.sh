@@ -119,7 +119,9 @@ branch_exists() {
 # Read input from /dev/tty if available, otherwise stdin
 # This allows scripts to work in CI where /dev/tty doesn't exist
 _read_input() {
-  if [ -r /dev/tty ]; then
+  # Check if stdin is a terminal - if so, use /dev/tty for prompts
+  # In CI, stdin is a pipe so we read from stdin directly
+  if [ -t 0 ]; then
     read "$@" </dev/tty
   else
     read "$@"
@@ -131,13 +133,13 @@ _read_input() {
 prompt() {
   local prompt_text="$1"
   local default="$2"
-  local value
+  local value=""
 
   if [ -n "$default" ]; then
-    _read_input -r -p "  $prompt_text [$default]: " value
+    _read_input -r -p "  $prompt_text [$default]: " value || true
     value="${value:-$default}"
   else
-    _read_input -r -p "  $prompt_text: " value
+    _read_input -r -p "  $prompt_text: " value || true
   fi
 
   # Normalize for template use
@@ -149,10 +151,10 @@ prompt() {
 prompt_yn() {
   local prompt_text="$1"
   local default="$2"
-  local yn
+  local yn=""
 
   while true; do
-    _read_input -r -p "  $prompt_text (y/n) [$default]: " yn
+    _read_input -r -p "  $prompt_text (y/n) [$default]: " yn || true
     yn="${yn:-$default}"
     case $yn in
       [Yy]* ) return 0;;
