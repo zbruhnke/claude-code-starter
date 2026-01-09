@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-01-09
+
+### Fixed
+- BSD `cp -r` compatibility for adopt.sh on macOS (trailing slash behavior difference)
+- Exit code capture in CI using `set +e`/`set -e` instead of fragile pipeline `||`
+- Added `apt-get update` before `apt-get install` in CI
+- Dynamic Homebrew prefix detection (works on both Intel and ARM Macs)
+- More robust previous tag detection in release workflow
+
+### Added
+- Smoke test for setup.sh in release validation job
+- macOS `shasum -a 256` command in release checksum instructions
+
 ## [0.2.0] - 2025-01-09
 
 ### Added
@@ -60,7 +73,8 @@ Initial release.
 - SECURITY.md with vulnerability reporting process
 - Security model documentation in `.claude/rules/security-model.md`
 
-[Unreleased]: https://github.com/zbruhnke/claude-code-starter/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/zbruhnke/claude-code-starter/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/zbruhnke/claude-code-starter/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/zbruhnke/claude-code-starter/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/zbruhnke/claude-code-starter/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/zbruhnke/claude-code-starter/compare/v0.1.0...v0.1.1
