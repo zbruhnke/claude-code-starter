@@ -116,6 +116,16 @@ branch_exists() {
 # Prompts (interactive)
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Read input from /dev/tty if available, otherwise stdin
+# This allows scripts to work in CI where /dev/tty doesn't exist
+_read_input() {
+  if [ -r /dev/tty ]; then
+    read "$@" </dev/tty
+  else
+    read "$@"
+  fi
+}
+
 # Prompt for text input with optional default
 # Usage: VALUE=$(prompt "Enter name" "default")
 prompt() {
@@ -124,10 +134,10 @@ prompt() {
   local value
 
   if [ -n "$default" ]; then
-    read -r -p "  $prompt_text [$default]: " value </dev/tty
+    _read_input -r -p "  $prompt_text [$default]: " value
     value="${value:-$default}"
   else
-    read -r -p "  $prompt_text: " value </dev/tty
+    _read_input -r -p "  $prompt_text: " value
   fi
 
   # Normalize for template use
@@ -142,7 +152,7 @@ prompt_yn() {
   local yn
 
   while true; do
-    read -r -p "  $prompt_text (y/n) [$default]: " yn </dev/tty
+    _read_input -r -p "  $prompt_text (y/n) [$default]: " yn
     yn="${yn:-$default}"
     case $yn in
       [Yy]* ) return 0;;
