@@ -525,11 +525,11 @@ cp .claude/hooks/pre-commit-review.sh .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```
 
-**Non-interactive mode:**
-The hook detects non-TTY environments (GUI clients, CI, Claude Code) and auto-approves to avoid hanging. This is intentional - the interactive review is for humans at the terminal.
+**Non-interactive mode (Claude Code, CI, GUI clients):**
+The hook passes silently in non-TTY environments. When using Claude Code, Claude is instructed (via CLAUDE.md) to explain changes and ask for confirmation in the conversation before committing.
 
-**Skip when needed:**
 ```bash
+# Skip review entirely (emergency use)
 SKIP_PRE_COMMIT_REVIEW=1 git commit -m "Emergency fix"
 ```
 

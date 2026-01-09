@@ -13,23 +13,26 @@
 
 set -euo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-BOLD='\033[1m'
-DIM='\033[2m'
-NC='\033[0m'
-
-# Check if this is an interactive terminal
-if [ ! -t 0 ]; then
-  # Non-interactive (e.g., called from Claude Code hook)
-  # Just exit successfully - Claude should review separately
-  exit 0
+# Colors (disable if not a terminal)
+if [ -t 1 ]; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  BLUE='\033[0;34m'
+  YELLOW='\033[1;33m'
+  BOLD='\033[1m'
+  DIM='\033[2m'
+  NC='\033[0m'
+else
+  RED='' GREEN='' BLUE='' YELLOW='' BOLD='' DIM='' NC=''
 fi
 
-# Skip if SKIP_PRE_COMMIT_REVIEW is set
+# Track if we can do interactive prompts
+INTERACTIVE=true
+if [ ! -t 0 ]; then
+  INTERACTIVE=false
+fi
+
+# Skip entirely if SKIP_PRE_COMMIT_REVIEW is set
 if [ -n "${SKIP_PRE_COMMIT_REVIEW:-}" ]; then
   exit 0
 fi
@@ -141,12 +144,20 @@ echo -e "${BOLD}Changes overview:${NC}"
 git diff --cached --stat | head -20
 echo ""
 
-# Interactive confirmation
+# Confirmation section
 echo -e "${BLUE}─────────────────────────────────────────────────────────────────${NC}"
 if [ "$HAS_WARNINGS" = true ]; then
   echo -e "${YELLOW}${BOLD}There are warnings above. Please review carefully.${NC}"
 fi
 echo ""
+
+# Non-interactive mode: pass silently
+# In Claude Code, the AI should explain changes in conversation instead
+if [ "$INTERACTIVE" = false ]; then
+  exit 0
+fi
+
+# Interactive mode: require explicit confirmation
 echo -e "${BOLD}Do you understand these changes and want to commit?${NC}"
 echo -e "${DIM}(y)es to commit, (n)o to abort, (d)iff to see full diff, (q)uit${NC}"
 echo ""

@@ -22,6 +22,15 @@ When working in this repo:
 - `.env` and `.env.*` files are blocked from reading (see `.claude/settings.json`)
 - See `.claude/rules/security-model.md` for full security documentation
 
+## Commit Review
+
+Before committing changes, always:
+1. Show the user what files are being committed
+2. Briefly explain the key changes
+3. Ask for confirmation before proceeding
+
+This prevents "vibe coding" - blindly committing AI-generated changes without review.
+
 ## Available Skills
 
 Skills are invoked automatically when your request matches their description:
