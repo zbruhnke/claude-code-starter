@@ -680,6 +680,12 @@ Found something that makes Claude Code work better? PRs welcome.
 
 ---
 
+## Security
+
+See [SECURITY.md](SECURITY.md) for our security policy and how to report vulnerabilities.
+
+---
+
 ## License
 
 MIT
