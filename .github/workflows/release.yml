@@ -95,6 +95,7 @@ jobs:
           name: ${{ steps.version.outputs.version }}
           body_path: release_notes.md
           draft: false
-          prerelease: ${{ contains(steps.version.outputs.version, '-') || startsWith(steps.version.outputs.version, 'v0.') }}
+          # Only mark as pre-release if version contains -alpha, -beta, -rc, etc.
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
