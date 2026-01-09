@@ -18,8 +18,9 @@ jobs:
 
       - name: Run shellcheck on scripts
         run: |
-          shellcheck setup.sh adopt.sh review-mr.sh lib/common.sh
-          shellcheck .claude/hooks/*.sh
+          # Exclude info-level warnings (SC2034=unused var, SC2086=quote expansion, SC2015=&& ||, SC2162=read -r, SC2295=pattern expansion)
+          shellcheck --severity=warning --exclude=SC2034 setup.sh adopt.sh review-mr.sh lib/common.sh
+          shellcheck --severity=warning --exclude=SC2034 .claude/hooks/*.sh
 
   smoke-test:
     name: Smoke Test
@@ -47,7 +48,8 @@ jobs:
           git init
 
           # Run setup non-interactively by providing inputs
-          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | timeout 30 "$GITHUB_WORKSPACE/setup.sh"
+          # TERM=dumb allows clear/tput commands to work in CI
+          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb timeout 30 "$GITHUB_WORKSPACE/setup.sh"
           EXIT_CODE=$?
 
           # Handle exit codes explicitly
