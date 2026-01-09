@@ -35,6 +35,38 @@ Most developers install Claude Code and use maybe 10% of its capabilities. This 
 - **Auto-formatting** - Runs your formatter after every edit
 - **Version detection** - Reads from `.tool-versions` automatically
 
+---
+
+## 5 Minute Tour
+
+See it work end-to-end:
+
+```bash
+# 1. Setup (takes ~2 min)
+git clone https://github.com/zbruhnke/claude-code-starter.git my-app
+cd my-app && ./setup.sh    # Pick TypeScript, accept defaults
+
+# 2. Start Claude Code
+claude
+
+# 3. Try the review skill
+> Review my staged changes
+# Claude runs code-review skill, analyzes your code
+
+# 4. Make an edit
+> Add a helper function to validate emails in src/utils.ts
+# After edit, auto-format hook runs prettier automatically
+
+# 5. Commit with review
+> Commit these changes
+# Pre-commit hook shows what changed, asks for confirmation
+# Claude explains the changes in conversation first
+```
+
+That's the core loop: **edit → auto-format → review → commit with understanding**.
+
+---
+
 ## Quick Start
 
 ### Option 1: New Project (Start Fresh)
@@ -107,6 +139,31 @@ cp stacks/typescript/rules.md your-project/.claude/rules/
 ```
 
 > **Note**: Stack templates contain `{{PLACEHOLDER}}` variables (e.g., `{{PROJECT_NAME}}`, `{{CMD_TEST}}`). When copying manually, you'll need to replace these yourself. Running `setup.sh` handles substitution automatically.
+
+---
+
+## Stability & Versioning
+
+**Current status:** Pre-release. The file structure and core concepts are stable, but details may change.
+
+**What's stable:**
+- File structure (`.claude/`, `CLAUDE.md`, `.claudeignore`)
+- Skill and agent YAML frontmatter format
+- Hook input/output contract (JSON on stdin, exit codes)
+- Permission pattern syntax
+
+**What may change:**
+- Setup script prompts and flow
+- Default permissions in presets
+- Included skills/agents/rules content
+
+**For reproducible installs**, pin to a specific commit:
+```bash
+# Instead of main, use a commit SHA
+curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/<SHA>/setup.sh -o setup.sh
+```
+
+**Upgrade path:** Re-run `adopt.sh` to pull updated components. Your `CLAUDE.md` and `.claude/settings.local.json` won't be overwritten.
 
 ---
 
@@ -477,6 +534,26 @@ Stack-specific presets (in `stacks/*/settings.json`) add language-specific permi
 
 ---
 
+### Permission Philosophy
+
+Permissions follow a deliberate escalation model:
+
+| Layer | Scope | Example |
+|-------|-------|---------|
+| **Base** | Safe, non-destructive | `git status`, `ls`, `pwd` |
+| **Stack presets** | Build/test/lint for your language | `npm test`, `pytest`, `cargo build` |
+| **Local overrides** | Opt-in risky operations | `rm`, `mv`, file system writes |
+
+**Design principles:**
+- Claude prompts for unlisted commands (you approve once per session)
+- Destructive operations (`rm -rf`, `sudo`) are explicitly denied
+- Stack presets add only what's needed for that ecosystem
+- Personal preferences go in `.claude/settings.local.json` (git-ignored)
+
+This means a fresh install is safe by default. You expand permissions intentionally, not accidentally.
+
+---
+
 ### Pre-Commit Review (Important!)
 
 This starter includes a pre-commit review system that forces you to understand what you're committing.
@@ -631,6 +708,34 @@ Required CI/CD variables:
 - `ANTHROPIC_API_KEY` - Your Anthropic API key
 - `GITLAB_TOKEN` - GitLab token with `api` scope for posting comments
 
+#### Data & Privacy
+
+When using automated PR/MR reviews, understand what's sent to Anthropic:
+
+**What's transmitted:**
+- The diff of changed files
+- File paths and names
+- Commit messages
+- PR/MR title and description
+
+**What's NOT transmitted:**
+- Unchanged files (unless explicitly referenced)
+- Repository secrets (unless they're in the diff)
+- Git history beyond the current PR
+
+**Recommendations for sensitive repos:**
+- Review the workflow file before enabling
+- Don't enable on repos with secrets in code (fix that first)
+- Use environment-scoped secrets with minimal permissions
+- Consider self-hosted runners for regulated environments
+- Disable on forks if your repo is public
+
+**Token scopes (least privilege):**
+- GitHub: `contents: read`, `pull-requests: write`
+- GitLab: `api` scope (required for MR comments)
+
+If your organization has data residency requirements, consult your security team before enabling automated reviews.
+
 ---
 
 ## Files Reference
@@ -669,14 +774,59 @@ Rules in `.claude/rules/` are reference documentation, not automatically loaded 
 
 ---
 
+## Uninstall
+
+To completely remove Claude Code Starter from a project:
+
+```bash
+# Core files
+rm -rf .claude/
+rm -f CLAUDE.md CLAUDE.local.md .claudeignore
+
+# Git hook (if installed)
+rm -f .git/hooks/pre-commit
+
+# CI workflows (if copied)
+rm -f .github/workflows/pr-review.yml
+rm -f ci/gitlab-mr-review.yml
+
+# Clean up .gitignore entries (optional)
+# Remove lines: CLAUDE.local.md, .claude/settings.local.json
+```
+
+**If you used adopt.sh:** Only the components you installed need removal. Check what exists in `.claude/` before deleting.
+
+**Secrets:** Remove `ANTHROPIC_API_KEY` from your CI/CD secrets if you added it for PR reviews.
+
+---
+
 ## Contributing
 
 Found something that makes Claude Code work better? PRs welcome.
 
-- Add useful skills or agents
-- Improve stack presets
-- Share hook patterns
-- Fix documentation
+**What we're looking for:**
+- New stack presets (with CLAUDE.md template, settings.json, rules.md)
+- Useful skills or agents (with clear use cases)
+- Hook improvements (especially cross-platform fixes)
+- Documentation fixes and clarifications
+
+**Quality bar:**
+- Shell scripts must pass `shellcheck --severity=warning`
+- JSON files must be valid (`jq . file.json`)
+- New features need documentation updates
+- Follow existing code style and patterns
+
+**Before submitting:**
+```bash
+# Run the same checks as CI
+shellcheck --severity=warning setup.sh adopt.sh review-mr.sh lib/common.sh .claude/hooks/*.sh
+for f in .claude/settings.json stacks/*/settings.json; do jq . "$f" > /dev/null; done
+```
+
+**Not accepting:**
+- Breaking changes to stable interfaces (see Stability section)
+- Features that require non-standard dependencies
+- Platform-specific code without cross-platform fallbacks
 
 ---
 
