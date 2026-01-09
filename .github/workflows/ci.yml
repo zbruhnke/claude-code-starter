@@ -18,21 +18,35 @@ jobs:
 
       - name: Run shellcheck on scripts
         run: |
-          # Exclude info-level warnings (SC2034=unused var, SC2086=quote expansion, SC2015=&& ||, SC2162=read -r, SC2295=pattern expansion)
+          # Exclude info-level warnings (SC2034=unused var)
           shellcheck --severity=warning --exclude=SC2034 setup.sh adopt.sh review-mr.sh lib/common.sh
           shellcheck --severity=warning --exclude=SC2034 .claude/hooks/*.sh
 
   smoke-test:
-    name: Smoke Test
-    runs-on: ubuntu-latest
+    name: Smoke Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
 
       - name: Install jq (required for hooks)
-        run: sudo apt-get install -y jq
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get install -y jq
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew install jq || true  # May already be installed
+          fi
 
       - name: Check bash version
-        run: bash --version
+        run: |
+          bash --version
+          # Warn if Bash < 4.0 (macOS ships with 3.2)
+          BASH_MAJOR=$(bash -c 'echo ${BASH_VERSINFO[0]}')
+          if [ "$BASH_MAJOR" -lt 4 ]; then
+            echo "::warning::Bash version is $BASH_MAJOR.x (< 4.0). Some features may not work."
+          fi
 
       - name: Syntax check all scripts
         run: |
@@ -49,14 +63,13 @@ jobs:
 
           # Run setup non-interactively by providing inputs
           # TERM=dumb allows clear/tput commands to work in CI
-          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb timeout 30 "$GITHUB_WORKSPACE/setup.sh"
-          EXIT_CODE=$?
+          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb timeout 30 "$GITHUB_WORKSPACE/setup.sh" || EXIT_CODE=$?
 
           # Handle exit codes explicitly
-          if [ $EXIT_CODE -eq 124 ]; then
+          if [ "${EXIT_CODE:-0}" -eq 124 ]; then
             echo "::error::setup.sh timed out after 30 seconds"
             exit 1
-          elif [ $EXIT_CODE -ne 0 ]; then
+          elif [ "${EXIT_CODE:-0}" -ne 0 ]; then
             echo "::error::setup.sh failed with exit code $EXIT_CODE"
             exit 1
           fi
@@ -69,8 +82,43 @@ jobs:
           test -f .claude/settings.json || { echo "::error::settings.json not created"; exit 1; }
           echo "✓ settings.json created"
 
+      - name: Test setup.sh idempotency (run twice)
+        run: |
+          cd /tmp/test-project
+
+          # Run setup again - should not fail
+          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb timeout 30 "$GITHUB_WORKSPACE/setup.sh" || EXIT_CODE=$?
+
+          if [ "${EXIT_CODE:-0}" -eq 124 ]; then
+            echo "::error::setup.sh idempotency test timed out"
+            exit 1
+          elif [ "${EXIT_CODE:-0}" -ne 0 ]; then
+            echo "::error::setup.sh idempotency test failed - second run should succeed"
+            exit 1
+          fi
+
+          echo "✓ Idempotency test passed"
+
       - name: Test adopt.sh help
         run: ./adopt.sh --help
+
+      - name: Test adopt.sh smoke test (skills component)
+        run: |
+          mkdir -p /tmp/adopt-test
+          cd /tmp/adopt-test
+          git init
+
+          # Adopt skills component
+          "$GITHUB_WORKSPACE/adopt.sh" skills || EXIT_CODE=$?
+
+          if [ "${EXIT_CODE:-0}" -ne 0 ]; then
+            echo "::error::adopt.sh skills failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+
+          # Verify skills were copied
+          test -d .claude/skills || { echo "::error::skills not copied"; exit 1; }
+          echo "✓ adopt.sh skills test passed"
 
       - name: Test review-mr.sh help
         run: ./review-mr.sh --help

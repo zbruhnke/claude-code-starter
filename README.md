@@ -23,6 +23,26 @@ bash --version       # Should be 4.0+
 jq --version         # Required for hooks
 ```
 
+### Compatibility
+
+| Component | Requirement | Notes |
+|-----------|-------------|-------|
+| **OS** | Linux, macOS | Tested on Ubuntu 22.04+, macOS 13+ |
+| **Bash** | 4.0+ | macOS ships with 3.2; install newer via Homebrew |
+| **jq** | Any version | Required for hooks |
+| **Claude Code** | Any version | Tested with 1.x |
+
+**Stack-specific formatters (optional):**
+
+| Stack | Formatter | Install |
+|-------|-----------|---------|
+| TypeScript | prettier | `npm i -g prettier` |
+| Python | black, ruff | `pip install black ruff` |
+| Go | gofmt | Included with Go |
+| Rust | rustfmt | `rustup component add rustfmt` |
+| Ruby | rubocop | `gem install rubocop` |
+| Elixir | mix format | Included with Elixir |
+
 ## Why This Exists
 
 Most developers install Claude Code and use maybe 10% of its capabilities. This repo gives you:
@@ -46,21 +66,24 @@ See it work end-to-end:
 git clone https://github.com/zbruhnke/claude-code-starter.git my-app
 cd my-app && ./setup.sh    # Pick TypeScript, accept defaults
 
-# 2. Start Claude Code
+# 2. Create something to work with
+mkdir -p src && echo "export const hello = () => 'world';" > src/utils.ts
+git add -A
+
+# 3. Start Claude Code
 claude
+```
 
-# 3. Try the review skill
+Now in Claude Code:
+```
 > Review my staged changes
-# Claude runs code-review skill, analyzes your code
+# → Claude runs code-review skill, analyzes src/utils.ts
 
-# 4. Make an edit
 > Add a helper function to validate emails in src/utils.ts
-# After edit, auto-format hook runs prettier automatically
+# → After edit, auto-format hook runs prettier automatically
 
-# 5. Commit with review
-> Commit these changes
-# Pre-commit hook shows what changed, asks for confirmation
-# Claude explains the changes in conversation first
+> Stage and commit these changes
+# → Pre-commit hook shows diff, Claude explains before committing
 ```
 
 That's the core loop: **edit → auto-format → review → commit with understanding**.
@@ -533,6 +556,8 @@ Rules in `.claude/rules/` are reference documentation, not automatically loaded 
 
 To completely remove Claude Code Starter from a project:
 
+> **Note:** These commands are for you (human). Claude Code is blocked from running `rm -rf`.
+
 ```bash
 # Core files
 rm -rf .claude/
@@ -557,43 +582,13 @@ rm -f ci/gitlab-mr-review.yml
 
 ## Contributing
 
-Found something that makes Claude Code work better? PRs welcome.
+PRs welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-**What we're looking for:**
-- New stack presets (with CLAUDE.md template, settings.json, rules.md)
-- Useful skills or agents (with clear use cases)
-- Hook improvements (especially cross-platform fixes)
-- Documentation fixes and clarifications
-
-**Quality bar:**
-- Shell scripts must pass `shellcheck --severity=warning`
-- JSON files must be valid (`jq . file.json`)
-- New features need documentation updates
-- Follow existing code style and patterns
-
-**Before submitting:**
+**Quick quality check:**
 ```bash
-# Run the same checks as CI
 shellcheck --severity=warning setup.sh adopt.sh review-mr.sh lib/common.sh .claude/hooks/*.sh
 for f in .claude/settings.json stacks/*/settings.json; do jq . "$f" > /dev/null; done
 ```
-
-**Not accepting:**
-- Breaking changes to stable interfaces (see Stability section)
-- Features that require non-standard dependencies
-- Platform-specific code without cross-platform fallbacks
-
-**Releasing** (maintainers):
-```bash
-git tag -a v0.2.0 -m "v0.2.0 - Brief description"
-git push origin v0.2.0
-# GitHub Actions automatically validates, generates notes, and creates the release
-```
-
-Versioning:
-- `v0.x.y` during pre-1.0 development
-- Semver (`vX.Y.Z`) after 1.0
-- Add `-alpha`, `-beta`, `-rc.1` suffix for pre-releases (e.g., `v1.0.0-rc.1`)
 
 ---
 
@@ -603,6 +598,19 @@ See [SECURITY.md](SECURITY.md) for our security policy and how to report vulnera
 
 ---
 
+## Support
+
+Need help? See [SUPPORT.md](SUPPORT.md) for troubleshooting and how to get assistance.
+
+---
+
 ## License
 
-MIT
+MIT - See [LICENSE](LICENSE)
+
+---
+
+## Community
+
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Changelog](CHANGELOG.md)
