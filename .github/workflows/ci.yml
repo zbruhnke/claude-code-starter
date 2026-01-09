@@ -159,15 +159,11 @@ jobs:
             exit 1
           fi
 
-          # Verify skills were copied
+          # Verify skills were copied with proper directory structure
           test -d .claude/skills || { echo "::error::skills directory not copied"; exit 1; }
-          # Check that at least some skill content exists
-          SKILL_COUNT=$(find .claude/skills -name "SKILL.md" | wc -l)
-          if [ "$SKILL_COUNT" -lt 1 ]; then
-            echo "::error::No skills found in .claude/skills"
-            exit 1
-          fi
-          echo "✓ adopt.sh skills test passed ($SKILL_COUNT skills installed)"
+          test -d .claude/skills/code-review || { echo "::error::code-review skill directory not created"; exit 1; }
+          test -f .claude/skills/code-review/SKILL.md || { echo "::error::code-review SKILL.md not found"; exit 1; }
+          echo "✓ adopt.sh skills test passed"
 
       - name: Test review-mr.sh help
         run: |

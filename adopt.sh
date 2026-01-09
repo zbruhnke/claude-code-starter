@@ -80,7 +80,8 @@ install_skills() {
       if [ -d "$TARGET_DIR/.claude/skills/$skill_name" ]; then
         print_warning "Skill '$skill_name' already exists, skipping"
       else
-        cp -r "$skill_dir" "$TARGET_DIR/.claude/skills/"
+        # Remove trailing slash for BSD cp compatibility (macOS)
+        cp -r "${skill_dir%/}" "$TARGET_DIR/.claude/skills/"
         print_success "Installed skill: $skill_name"
       fi
     fi
