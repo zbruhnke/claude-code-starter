@@ -1,0 +1,79 @@
+# Claude Ignore File
+# Files and directories listed here won't be accessed by Claude.
+# This keeps large/irrelevant files out of Claude's context.
+#
+# Syntax is identical to .gitignore
+
+# Dependencies
+node_modules/
+vendor/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+*.bundle.js
+*.bundle.js.map
+
+# Generated files
+*.generated.*
+.prisma/
+generated/
+*.min.js
+*.min.css
+
+# Large data files
+*.csv
+*.json.gz
+*.sql
+*.sqlite
+*.db
+fixtures/
+seed-data/
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Test artifacts
+coverage/
+.nyc_output/
+*.lcov
+playwright-report/
+test-results/
+
+# Logs
+*.log
+logs/
+
+# Secrets and environment
+# Note: .env files are ALSO blocked in settings.json deny rules.
+# Other files here are just excluded from context, not security-blocked.
+# Add explicit deny rules in settings.json if you need to block reading.
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+
+# Package locks (usually not useful context)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Gemfile.lock
+poetry.lock
+Pipfile.lock
+
+# Documentation you don't need Claude to read
+docs/api/          # Generated API docs
+CHANGELOG.md       # Usually too long

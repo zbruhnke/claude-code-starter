@@ -1,0 +1,15 @@
+{
+  "_comment": "Copy this to settings.local.json for personal overrides (gitignored)",
+
+  "permissions": {
+    "allow": [
+      "Bash(docker:*)",
+      "Bash(make:*)"
+    ]
+  },
+
+  "env": {
+    "MY_API_KEY": "${MY_API_KEY}",
+    "DEBUG": "true"
+  }
+}

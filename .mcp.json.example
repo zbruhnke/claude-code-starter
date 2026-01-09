@@ -1,0 +1,232 @@
+{
+  "_readme": [
+    "MCP (Model Context Protocol) servers extend Claude's capabilities.",
+    "Copy this file to .mcp.json and uncomment the servers you need.",
+    "Environment variables (${VAR_NAME}) are read from your shell.",
+    "",
+    "Official servers: https://github.com/modelcontextprotocol/servers",
+    "Community servers: https://github.com/punkpeye/awesome-mcp-servers"
+  ],
+
+  "mcpServers": {
+
+    "_section_core": "═══════════════════════ CORE TOOLS ═══════════════════════",
+
+    "filesystem": {
+      "_comment": "Access files outside the project directory",
+      "_usage": "Useful for accessing shared configs, other repos, or system files",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/you/projects",
+        "/Users/you/.config"
+      ]
+    },
+
+    "memory": {
+      "_comment": "Persistent memory across Claude sessions",
+      "_usage": "Remember context, decisions, and learned preferences between conversations",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+
+    "fetch": {
+      "_comment": "Fetch web pages and APIs with fewer restrictions",
+      "_usage": "Better than built-in WebFetch for some sites",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+    },
+
+    "brave-search": {
+      "_comment": "Web search via Brave Search API",
+      "_usage": "Alternative to built-in search, requires Brave API key",
+      "_get_key": "https://brave.com/search/api/",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      }
+    },
+
+    "_section_dev": "═══════════════════════ DEVELOPMENT ═══════════════════════",
+
+    "github": {
+      "_comment": "GitHub integration - issues, PRs, repos, actions",
+      "_usage": "Create issues, review PRs, manage repos, check CI status",
+      "_get_token": "https://github.com/settings/tokens (scopes: repo, read:org)",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+
+    "gitlab": {
+      "_comment": "GitLab integration - similar to GitHub server",
+      "_usage": "For teams using GitLab instead of GitHub",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gitlab"],
+      "env": {
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_TOKEN}",
+        "GITLAB_API_URL": "https://gitlab.com/api/v4"
+      }
+    },
+
+    "linear": {
+      "_comment": "Linear project management integration",
+      "_usage": "Create/update issues, check project status, link commits to issues",
+      "_get_key": "Linear Settings > API > Personal API keys",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-linear"],
+      "env": {
+        "LINEAR_API_KEY": "${LINEAR_API_KEY}"
+      }
+    },
+
+    "sentry": {
+      "_comment": "Sentry error tracking integration",
+      "_usage": "Query errors, get stack traces, link fixes to issues",
+      "_get_token": "Sentry > Settings > Auth Tokens",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sentry"],
+      "env": {
+        "SENTRY_AUTH_TOKEN": "${SENTRY_AUTH_TOKEN}",
+        "SENTRY_ORG": "your-org-slug"
+      }
+    },
+
+    "_section_data": "═══════════════════════ DATABASES ═══════════════════════",
+
+    "postgres": {
+      "_comment": "PostgreSQL database access",
+      "_usage": "Query data, explore schema, debug queries",
+      "_warning": "Use read-only credentials for safety",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "${DATABASE_URL}"
+      }
+    },
+
+    "sqlite": {
+      "_comment": "SQLite database access",
+      "_usage": "Query local SQLite databases",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sqlite",
+        "--db-path",
+        "./data/app.db"
+      ]
+    },
+
+    "redis": {
+      "_comment": "Redis cache/database access",
+      "_usage": "Inspect cache, debug queue jobs, view session data",
+      "command": "npx",
+      "args": ["-y", "mcp-server-redis"],
+      "env": {
+        "REDIS_URL": "${REDIS_URL:-redis://localhost:6379}"
+      }
+    },
+
+    "_section_cloud": "═══════════════════════ CLOUD/INFRA ═══════════════════════",
+
+    "aws": {
+      "_comment": "AWS services integration",
+      "_usage": "Query S3, check Lambda logs, inspect EC2, etc.",
+      "_warning": "Use least-privilege IAM credentials",
+      "command": "npx",
+      "args": ["-y", "mcp-server-aws"],
+      "env": {
+        "AWS_ACCESS_KEY_ID": "${AWS_ACCESS_KEY_ID}",
+        "AWS_SECRET_ACCESS_KEY": "${AWS_SECRET_ACCESS_KEY}",
+        "AWS_REGION": "${AWS_REGION:-us-east-1}"
+      }
+    },
+
+    "docker": {
+      "_comment": "Docker container management",
+      "_usage": "List containers, view logs, inspect images",
+      "command": "npx",
+      "args": ["-y", "mcp-server-docker"]
+    },
+
+    "kubernetes": {
+      "_comment": "Kubernetes cluster management",
+      "_usage": "View pods, check deployments, read logs",
+      "_warning": "Uses your current kubectl context",
+      "command": "npx",
+      "args": ["-y", "mcp-server-kubernetes"]
+    },
+
+    "_section_comms": "═══════════════════════ COMMUNICATION ═══════════════════════",
+
+    "slack": {
+      "_comment": "Slack workspace integration",
+      "_usage": "Read messages, post updates, search conversations",
+      "_note": "Requires Slack app with appropriate scopes",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
+      }
+    },
+
+    "notion": {
+      "_comment": "Notion workspace integration",
+      "_usage": "Read/write pages, search docs, access databases",
+      "_get_key": "Notion > Settings > Integrations > Develop your own",
+      "command": "npx",
+      "args": ["-y", "mcp-server-notion"],
+      "env": {
+        "NOTION_API_KEY": "${NOTION_API_KEY}"
+      }
+    },
+
+    "_section_browser": "═══════════════════════ BROWSER/WEB ═══════════════════════",
+
+    "puppeteer": {
+      "_comment": "Browser automation with Puppeteer",
+      "_usage": "Scrape dynamic sites, take screenshots, test UIs",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+
+    "playwright": {
+      "_comment": "Browser automation with Playwright",
+      "_usage": "Alternative to Puppeteer, better cross-browser support",
+      "command": "npx",
+      "args": ["-y", "mcp-server-playwright"]
+    },
+
+    "_section_ai": "═══════════════════════ AI/ML ═══════════════════════",
+
+    "sequential-thinking": {
+      "_comment": "Enhanced reasoning for complex problems",
+      "_usage": "Better for multi-step reasoning, math, logic puzzles",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+
+    "_section_custom": "═══════════════════════ CUSTOM ═══════════════════════",
+
+    "_custom_local_example": {
+      "_comment": "Example: Local Python MCP server",
+      "command": "python",
+      "args": ["-m", "my_mcp_server"],
+      "cwd": "/path/to/server"
+    },
+
+    "_custom_remote_example": {
+      "_comment": "Example: Remote MCP server over HTTP",
+      "type": "http",
+      "url": "https://mcp.example.com/api",
+      "headers": {
+        "Authorization": "Bearer ${MY_API_TOKEN}"
+      }
+    }
+  }
+}

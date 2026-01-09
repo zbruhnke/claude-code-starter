@@ -1,0 +1,56 @@
+# Local Configuration
+
+<!--
+  This file is for YOUR personal/machine-specific context.
+  Copy this to CLAUDE.local.md and customize it.
+  CLAUDE.local.md is gitignored and won't be committed.
+-->
+
+## My Environment
+
+- Running on: [macOS / Linux / Windows WSL]
+- Shell: [zsh / bash / fish]
+- Node version: [e.g., 20.x via nvm]
+- Local database: [e.g., PostgreSQL running on localhost:5432]
+
+## Personal Preferences
+
+<!--
+  Things you prefer that might differ from team conventions.
+  Claude will respect these in your local sessions.
+-->
+
+- I prefer verbose commit messages
+- Always explain your reasoning before making changes
+- Ask before deleting files
+
+## Current Working Context
+
+<!--
+  What you're personally working on right now.
+  Update this when you switch tasks.
+-->
+
+Working on: [Current task or feature]
+Branch: [feature/my-current-branch]
+Notes: [Any context that helps]
+
+## Local Paths
+
+<!--
+  Paths specific to your machine that Claude might need.
+-->
+
+- Project root: /Users/yourname/projects/this-project
+- Local scripts: ~/bin/
+- SSH keys: ~/.ssh/
+
+## Scratchpad
+
+<!--
+  Temporary notes, things to remember, work in progress.
+  A place to jot things down during a session.
+-->
+
+- TODO: Remember to update the API docs after finishing the endpoint
+- NOTE: The staging server is currently down for maintenance
