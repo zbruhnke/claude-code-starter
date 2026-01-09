@@ -36,17 +36,19 @@ jobs:
           if [[ "$RUNNER_OS" == "Linux" ]]; then
             sudo apt-get install -y jq
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install jq coreutils || true  # jq for hooks, coreutils for gtimeout
+            # jq for hooks, coreutils for gtimeout, bash for Bash 4+
+            brew install jq coreutils bash || true
           fi
 
       - name: Check bash version
         run: |
-          bash --version
-          # Warn if Bash < 4.0 (macOS ships with 3.2)
-          BASH_MAJOR=$(bash -c 'echo ${BASH_VERSINFO[0]}')
-          if [ "$BASH_MAJOR" -lt 4 ]; then
-            echo "::warning::Bash version is $BASH_MAJOR.x (< 4.0). Some features may not work."
+          # On macOS, use Homebrew bash (4+) instead of system bash (3.2)
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            export PATH="/opt/homebrew/bin:$PATH"
           fi
+          bash --version
+          BASH_MAJOR=$(bash -c 'echo ${BASH_VERSINFO[0]}')
+          echo "Using Bash $BASH_MAJOR.x"
 
       - name: Syntax check all scripts
         run: |
@@ -61,15 +63,18 @@ jobs:
           cd /tmp/test-project
           git init
 
-          # Use gtimeout on macOS, timeout on Linux
+          # On macOS, use Homebrew tools (bash 4+, gtimeout)
           TIMEOUT_CMD="timeout"
+          BASH_CMD="bash"
           if [[ "$RUNNER_OS" == "macOS" ]]; then
+            export PATH="/opt/homebrew/bin:$PATH"
             TIMEOUT_CMD="gtimeout"
+            BASH_CMD="/opt/homebrew/bin/bash"
           fi
 
           # Run setup non-interactively by providing inputs
           # TERM=dumb allows clear/tput commands to work in CI
-          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb $TIMEOUT_CMD 30 "$GITHUB_WORKSPACE/setup.sh" || EXIT_CODE=$?
+          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb $TIMEOUT_CMD 30 $BASH_CMD "$GITHUB_WORKSPACE/setup.sh" || EXIT_CODE=$?
 
           # Handle exit codes explicitly
           if [ "${EXIT_CODE:-0}" -eq 124 ]; then
@@ -92,14 +97,17 @@ jobs:
         run: |
           cd /tmp/test-project
 
-          # Use gtimeout on macOS, timeout on Linux
+          # On macOS, use Homebrew tools (bash 4+, gtimeout)
           TIMEOUT_CMD="timeout"
+          BASH_CMD="bash"
           if [[ "$RUNNER_OS" == "macOS" ]]; then
+            export PATH="/opt/homebrew/bin:$PATH"
             TIMEOUT_CMD="gtimeout"
+            BASH_CMD="/opt/homebrew/bin/bash"
           fi
 
           # Run setup again - should not fail
-          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb $TIMEOUT_CMD 30 "$GITHUB_WORKSPACE/setup.sh" || EXIT_CODE=$?
+          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | TERM=dumb $TIMEOUT_CMD 30 $BASH_CMD "$GITHUB_WORKSPACE/setup.sh" || EXIT_CODE=$?
 
           if [ "${EXIT_CODE:-0}" -eq 124 ]; then
             echo "::error::setup.sh idempotency test timed out"
@@ -112,7 +120,13 @@ jobs:
           echo "✓ Idempotency test passed"
 
       - name: Test adopt.sh help
-        run: ./adopt.sh --help
+        run: |
+          # On macOS, use Homebrew bash
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            /opt/homebrew/bin/bash ./adopt.sh --help
+          else
+            ./adopt.sh --help
+          fi
 
       - name: Test adopt.sh smoke test (skills component)
         run: |
@@ -120,8 +134,14 @@ jobs:
           cd /tmp/adopt-test
           git init
 
+          # On macOS, use Homebrew bash
+          BASH_CMD="bash"
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            BASH_CMD="/opt/homebrew/bin/bash"
+          fi
+
           # Adopt skills component
-          "$GITHUB_WORKSPACE/adopt.sh" skills || EXIT_CODE=$?
+          $BASH_CMD "$GITHUB_WORKSPACE/adopt.sh" skills || EXIT_CODE=$?
 
           if [ "${EXIT_CODE:-0}" -ne 0 ]; then
             echo "::error::adopt.sh skills failed with exit code $EXIT_CODE"
@@ -133,7 +153,13 @@ jobs:
           echo "✓ adopt.sh skills test passed"
 
       - name: Test review-mr.sh help
-        run: ./review-mr.sh --help
+        run: |
+          # On macOS, use Homebrew bash
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            /opt/homebrew/bin/bash ./review-mr.sh --help
+          else
+            ./review-mr.sh --help
+          fi
 
   json-validate:
     name: Validate JSON
