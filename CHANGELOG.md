@@ -14,16 +14,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - setup.sh security summary no longer overclaims "keys, secrets" blocking (only .env files are blocked by default)
 - validate-bash.sh: rm detection now handles flag permutations (`-fr`, `-r -f`, `--recursive`)
 - validate-bash.sh: rm detection now blocks `.`, `..`, `/*` targets
+- validate-bash.sh: rm detection now catches `sudo rm`, `command rm`, `\rm` bypass attempts
 - validate-bash.sh: dd detection no longer requires `if=` (blocks any `of=/dev/`)
 - validate-bash.sh: mkfs/fdisk/parted detection is now case-insensitive
+- validate-bash.sh: chmod detection now correctly uses `-R` (was incorrectly `-r`)
+- validate-bash.sh: fixed regex character class issues in target detection
 - validate-bash.sh: force flag warning now only triggers for rm/mv/cp/git-push (reduces noise)
 
 ### Changed
 - .claudeignore now appends missing recommended patterns instead of skipping when file exists
 - validate-bash.sh uses LC_ALL=C and 8k input cap for grep safety
+- Test harness uses `jq -cn` for safe JSON construction (handles quotes/backslashes)
 
 ### Added
-- Regression test suite for validate-bash.sh hook (26 test cases)
+- Regression test suite for validate-bash.sh hook (41 test cases)
 - validate-bash.sh tests run in CI on both Ubuntu and macOS
 
 ## [0.2.1] - 2025-01-09
