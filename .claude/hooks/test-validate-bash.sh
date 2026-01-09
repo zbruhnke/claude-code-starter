@@ -67,6 +67,12 @@ test_command "block" "command rm -rf /" "command rm -rf /"
 test_command "block" "\\rm -rf /" "\\rm -rf / (alias bypass)"
 test_command "block" "sudo command rm -rf /" "sudo command rm -rf /"
 
+# rm tests - after command separators (should block)
+test_command "block" "true; rm -rf /" "true; rm -rf / (after semicolon)"
+test_command "block" "echo hi && rm -rf /" "echo && rm -rf / (after &&)"
+test_command "block" "false || rm -rf /" "false || rm -rf / (after ||)"
+test_command "block" "(rm -rf /)" "(rm -rf /) (in subshell)"
+
 # rm tests - should allow
 test_command "allow" "rm -rf node_modules" "rm -rf node_modules"
 test_command "allow" "rm -rf dist/" "rm -rf dist/"

@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - validate-bash.sh: dd detection no longer requires `if=` (blocks any `of=/dev/`)
 - validate-bash.sh: mkfs/fdisk/parted detection is now case-insensitive
 - validate-bash.sh: chmod detection now correctly uses `-R` (was incorrectly `-r`)
-- validate-bash.sh: fixed regex character class issues in target detection
+- validate-bash.sh: fixed regex POSIX character class syntax (can't mix `[:space:]` with literals in `[...]`)
+- validate-bash.sh: target detection now handles `)` terminator for subshell syntax
 - validate-bash.sh: force flag warning now only triggers for rm/mv/cp/git-push (reduces noise)
 
 ### Changed
@@ -27,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test harness uses `jq -cn` for safe JSON construction (handles quotes/backslashes)
 
 ### Added
-- Regression test suite for validate-bash.sh hook (41 test cases)
+- Regression test suite for validate-bash.sh hook (45 test cases)
 - validate-bash.sh tests run in CI on both Ubuntu and macOS
 
 ## [0.2.1] - 2025-01-09

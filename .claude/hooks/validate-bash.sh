@@ -62,31 +62,32 @@ matches_word() {
 
 # Function to check if command contains rm with recursive flags
 # Handles: -r, -rf, -fr, -R, --recursive, and combinations like -r -f
-# Also catches: command rm, \rm, sudo rm
+# Also catches: command rm, \rm, sudo rm, rm after ; && || | (
 has_rm_recursive() {
   local cmd="$LOWER"
-  # Check if command contains rm as a command (with common prefixes)
-  # Matches: rm, command rm, \rm, sudo rm, after ; && || | (
-  if ! echo "$cmd" | grep -qE '(^|[;&|()[:space:]])(sudo[[:space:]]+)?(command[[:space:]]+)?\\?rm[[:space:]]'; then
+  # Match rm command with common prefixes and separators
+  # Note: (^|[;&|()]|[[:space:]]) is the correct way to combine literals with POSIX classes
+  if ! echo "$cmd" | grep -qE '(^|[;&|()]|[[:space:]])(sudo[[:space:]]+)?(command[[:space:]]+)?\\?rm[[:space:]]'; then
     return 1
   fi
-  # Check for recursive flag in any form after rm
-  echo "$cmd" | grep -qE '(^|[;&|()[:space:]])(sudo[[:space:]]+)?(command[[:space:]]+)?\\?rm[^;|&]*(-[a-z]*r|--recursive)'
+  # Look for recursive flags after rm (handles -r, -rf, -fr, --recursive, split flags)
+  echo "$cmd" | grep -qE '(^|[;&|()]|[[:space:]])(sudo[[:space:]]+)?(command[[:space:]]+)?\\?rm[^;|&]*([[:space:]]-[a-z]*r|[[:space:]]--recursive)'
 }
 
 # Function to check for dangerous rm targets
 has_dangerous_rm_target() {
   local cmd="$LOWER"
   # Root filesystem: rm ... / (standalone)
-  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]/([[:space:];|&]|$)' && return 0
+  # Note: terminators include ) for subshell syntax like (rm -rf /)
+  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]/([[:space:];|&)]|$)' && return 0
   # Root with wildcard: rm ... /*
   echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]/\*' && return 0
   # Home directory
-  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]](~|\$home|\${home})([[:space:];|&]|$)' && return 0
+  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]](~|\$home|\${home})([[:space:];|&)]|$)' && return 0
   # Current directory (repo wipe): rm ... .
-  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]\.([[:space:];|&/]|$)' && return 0
+  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]\.([[:space:];|&)/]|$)' && return 0
   # Parent directory: rm ... ..
-  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]\.\.([[:space:];|&/]|$)' && return 0
+  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]\.\.([[:space:];|&)/]|$)' && return 0
   # Path traversal: rm ... something/../
   echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]][^[:space:]]*\.\./' && return 0
   # --no-preserve-root
@@ -135,8 +136,8 @@ if echo "$LOWER" | grep -qE '(curl|wget)[^|]*\|[^|]*(bash|sh|zsh)'; then
   exit 2
 fi
 
-# Block chmod 777 on root (with or without -R recursive flag)
-if echo "$LOWER" | grep -qE 'chmod[[:space:]]+(-r[[:space:]]+)?777[[:space:]]+/([[:space:];|&]|$)'; then
+# Block chmod 777 on root (catastrophic regardless of -R flag)
+if echo "$LOWER" | grep -qE 'chmod[^;|&]*[[:space:]]777[[:space:]]+/([[:space:];|&]|$)'; then
   echo "BLOCKED: Dangerous permission change" >&2
   exit 2
 fi
