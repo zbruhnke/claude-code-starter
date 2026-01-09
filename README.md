@@ -485,7 +485,9 @@ cp .github/workflows/pr-review.yml your-repo/.github/workflows/
 # Set ANTHROPIC_API_KEY and GITLAB_TOKEN in CI/CD variables
 ```
 
-→ **[Full documentation: docs/pr-reviews.md](docs/pr-reviews.md)** (includes data privacy details)
+**Data handling:** PR automation sends the diff, file paths, and commit messages to Anthropic's API. Don't enable on repos with secrets in code or where your security policy prohibits external API calls with code content.
+
+→ **[Full documentation: docs/pr-reviews.md](docs/pr-reviews.md)** (includes detailed privacy guidance)
 
 ---
 
