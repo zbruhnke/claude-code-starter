@@ -583,6 +583,15 @@ for f in .claude/settings.json stacks/*/settings.json; do jq . "$f" > /dev/null;
 - Features that require non-standard dependencies
 - Platform-specific code without cross-platform fallbacks
 
+**Releasing** (maintainers):
+```bash
+git tag -a v0.2.0 -m "v0.2.0 - Brief description"
+git push origin v0.2.0
+# GitHub Actions automatically creates the release
+```
+
+Versioning: `v0.x.y` for pre-1.0, semver after. Tags starting with `v0.` are marked as pre-release.
+
 ---
 
 ## Security

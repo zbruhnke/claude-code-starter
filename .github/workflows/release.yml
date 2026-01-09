@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # Run the same checks as CI before releasing
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get install -y shellcheck jq
+
+      - name: Run shellcheck
+        run: |
+          shellcheck --severity=warning --exclude=SC2034 setup.sh adopt.sh review-mr.sh lib/common.sh
+          shellcheck --severity=warning --exclude=SC2034 .claude/hooks/*.sh
+
+      - name: Syntax check all scripts
+        run: |
+          for f in setup.sh adopt.sh review-mr.sh lib/common.sh .claude/hooks/*.sh; do
+            bash -n "$f"
+          done
+
+      - name: Validate JSON files
+        run: |
+          for f in .claude/settings.json stacks/*/settings.json; do
+            jq . "$f" > /dev/null
+          done
+
+  release:
+    name: Create Release
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for release notes
+
+      - name: Get version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "Generating notes from $PREV_TAG to ${{ steps.version.outputs.version }}"
+            COMMITS=$(git log --pretty=format:"- %s" "$PREV_TAG"..HEAD)
+          else
+            echo "First release - using all commits"
+            COMMITS=$(git log --pretty=format:"- %s")
+          fi
+
+          # Write to file to handle multiline
+          cat > release_notes.md << 'NOTES_EOF'
+          ## What's Changed
+
+          NOTES_EOF
+
+          echo "$COMMITS" >> release_notes.md
+
+          cat >> release_notes.md << 'NOTES_EOF'
+
+          ## Installation
+
+          ```bash
+          # New project
+          git clone https://github.com/${{ github.repository }}.git my-project
+          cd my-project && ./setup.sh
+
+          # Existing project (pinned to this release)
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${{ steps.version.outputs.version }}/setup.sh -o setup.sh
+          less setup.sh && chmod +x setup.sh && ./setup.sh
+          ```
+
+          ## Documentation
+
+          See [README](https://github.com/${{ github.repository }}#readme) for full documentation.
+          NOTES_EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ steps.version.outputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, '-') || startsWith(steps.version.outputs.version, 'v0.') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
