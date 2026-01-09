@@ -31,10 +31,7 @@
       "Bash(ls:*)",
       "Bash(pwd)",
       "Bash(which:*)",
-      "Bash(mkdir:*)",
-      "Bash(rm:*)",
-      "Bash(mv:*)",
-      "Bash(cp:*)"
+      "Bash(mkdir:*)"
     ],
     "deny": [
       "Read(.env)",
@@ -44,9 +41,8 @@
       "Edit(.env.*)",
       "Write(.env)",
       "Write(.env.*)",
-      "Bash(rm -rf /)",
-      "Bash(rm -rf ~)",
-      "Bash(rm -rf .)",
+      "Bash(rm -rf:*)",
+      "Bash(rm -r:*)",
       "Bash(sudo:*)",
       "Bash(chmod 777:*)",
       "Bash(curl:*|bash)",

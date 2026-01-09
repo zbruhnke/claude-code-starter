@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck on scripts
+        run: |
+          shellcheck setup.sh adopt.sh review-mr.sh lib/common.sh
+          shellcheck .claude/hooks/*.sh
+
+  smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jq (required for hooks)
+        run: sudo apt-get install -y jq
+
+      - name: Check bash version
+        run: bash --version
+
+      - name: Syntax check all scripts
+        run: |
+          for f in setup.sh adopt.sh review-mr.sh lib/common.sh .claude/hooks/*.sh; do
+            echo "Checking $f..."
+            bash -n "$f"
+          done
+
+      - name: Test setup.sh in temp directory
+        run: |
+          mkdir -p /tmp/test-project
+          cd /tmp/test-project
+          git init
+
+          # Run setup non-interactively by providing inputs
+          # This tests that the script at least starts without errors
+          echo -e "1\ntest-project\nA test project\nnpm run dev\nnpm test\nnpm run build\nnpm run lint\nnpx tsc --noEmit\ny\ny\ny\ny\nn\nn\n" | timeout 30 "$GITHUB_WORKSPACE/setup.sh" || true
+
+          # Verify key files were created
+          test -f CLAUDE.md && echo "✓ CLAUDE.md created"
+          test -d .claude && echo "✓ .claude directory created"
+          test -f .claude/settings.json && echo "✓ settings.json created"
+
+      - name: Test adopt.sh help
+        run: ./adopt.sh --help
+
+      - name: Test review-mr.sh help
+        run: ./review-mr.sh --help
+
+  json-validate:
+    name: Validate JSON
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate all JSON files
+        run: |
+          for f in .claude/settings.json stacks/*/settings.json; do
+            echo "Validating $f..."
+            jq . "$f" > /dev/null
+          done
+          echo "✓ All JSON files valid"

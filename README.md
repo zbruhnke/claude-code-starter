@@ -1,5 +1,8 @@
 # Claude Code Starter
 
+[![CI](https://github.com/zbruhnke/claude-code-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/zbruhnke/claude-code-starter/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A production-ready starter template for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Get a fully configured setup in minutes instead of hours.
 
 ## Prerequisites
@@ -78,11 +81,15 @@ cd your-existing-project
 
 ### Option 3: Full Setup on Existing Project
 
+**Recommended (inspect first):**
 ```bash
 cd your-existing-project
 curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/main/setup.sh -o setup.sh
+less setup.sh          # Review the script first
 chmod +x setup.sh && ./setup.sh
 ```
+
+> **Note:** The deny-list blocks `curl | bash` to prevent Claude from running piped scripts. That protection is for the AI agent, not for you. You're a human who can (and should) inspect scripts before running them.
 
 ### Option 4: Manual Setup
 
@@ -414,10 +421,7 @@ Control what Claude can and cannot do.
       "Bash(pwd)",
       "Bash(which:*)",
       "Bash(echo:*)",
-      "Bash(mkdir:*)",
-      "Bash(rm:*)",
-      "Bash(mv:*)",
-      "Bash(cp:*)"
+      "Bash(mkdir:*)"
     ],
     "deny": [
       "Read(.env)",
@@ -426,9 +430,8 @@ Control what Claude can and cannot do.
       "Edit(.env.*)",
       "Write(.env)",
       "Write(.env.*)",
-      "Bash(rm -rf /)",
-      "Bash(rm -rf ~)",
-      "Bash(rm -rf .)",
+      "Bash(rm -rf:*)",
+      "Bash(rm -r:*)",
       "Bash(sudo:*)",
       "Bash(chmod 777:*)",
       "Bash(curl:*|bash)",
@@ -440,6 +443,8 @@ Control what Claude can and cannot do.
 }
 ```
 
+**Note:** Destructive operations like `rm`, `mv`, `cp` are intentionally **not** in the default allow list. Claude will prompt for permission when needed. Add them to `.claude/settings.local.json` if you trust Claude with file operations.
+
 Stack-specific presets (in `stacks/*/settings.json`) add language-specific permissions like `npm`, `pytest`, `cargo`, etc., plus additional protections like `Read(**/secrets/**)`.
 
 **Pattern syntax:**
@@ -447,8 +452,28 @@ Stack-specific presets (in `stacks/*/settings.json`) add language-specific permi
 - `:*` after a command matches any arguments
 - `**` matches across directory boundaries
 
-**Security details:**
-See `.claude/rules/security-model.md` for full details on what is and isn't protected, including known limitations and bypass techniques.
+**Configuration scopes:**
+- `.claude/settings.json` - Team defaults, committed to repo
+- `.claude/settings.local.json` - Personal overrides, git-ignored
+
+---
+
+### Security Model & Limitations
+
+**What this protects against:**
+- Accidental exposure of `.env` files and secrets
+- Recursive deletions (`rm -rf`)
+- Privilege escalation (`sudo`)
+- Remote code execution (`curl | bash`)
+- Overly permissive file modes (`chmod 777`)
+
+**What this does NOT protect against:**
+- Determined adversarial use (variables, encoding, indirect access)
+- Secrets exposed through logs, test output, or your own code
+- Network exfiltration if your app makes API calls
+- Reading sensitive files via allowed commands
+
+**This is a safety net, not a security boundary.** A sophisticated user can bypass these protections. See `.claude/rules/security-model.md` for full details including bypass techniques and hardening recommendations.
 
 ---
 
@@ -498,6 +523,14 @@ Do you understand these changes and want to commit?
 # The setup.sh script does this automatically, but manually:
 cp .claude/hooks/pre-commit-review.sh .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
+```
+
+**Non-interactive mode:**
+The hook detects non-TTY environments (GUI clients, CI, Claude Code) and auto-approves to avoid hanging. This is intentional - the interactive review is for humans at the terminal.
+
+**Skip when needed:**
+```bash
+SKIP_PRE_COMMIT_REVIEW=1 git commit -m "Emergency fix"
 ```
 
 ---

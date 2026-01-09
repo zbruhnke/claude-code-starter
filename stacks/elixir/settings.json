@@ -26,10 +26,7 @@
       "Bash(ls:*)",
       "Bash(pwd)",
       "Bash(which:*)",
-      "Bash(mkdir:*)",
-      "Bash(rm:*)",
-      "Bash(mv:*)",
-      "Bash(cp:*)"
+      "Bash(mkdir:*)"
     ],
     "deny": [
       "Read(.env)",
@@ -41,9 +38,8 @@
       "Edit(config/prod.secret.exs)",
       "Write(.env)",
       "Write(.env.*)",
-      "Bash(rm -rf /)",
-      "Bash(rm -rf ~)",
-      "Bash(rm -rf .)",
+      "Bash(rm -rf:*)",
+      "Bash(rm -r:*)",
       "Bash(sudo:*)",
       "Bash(chmod 777:*)",
       "Bash(curl:*|bash)",

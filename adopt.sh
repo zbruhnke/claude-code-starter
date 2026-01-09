@@ -23,6 +23,20 @@
 
 set -euo pipefail
 
+# Check bash version (need 4.0+ for associative arrays and other features)
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+  echo "Error: This script requires Bash 4.0 or later."
+  echo "Your version: $BASH_VERSION"
+  echo ""
+  echo "On macOS, install newer bash with Homebrew:"
+  echo "  brew install bash"
+  echo "  /opt/homebrew/bin/bash $0"
+  echo ""
+  echo "Or add to your shell config:"
+  echo "  export PATH=\"/opt/homebrew/bin:\$PATH\""
+  exit 1
+fi
+
 # Script location (where claude-code-starter is)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_DIR="$(pwd)"
