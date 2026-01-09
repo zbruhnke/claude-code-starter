@@ -173,6 +173,14 @@ jobs:
           fi
           $BASH_CMD ./review-mr.sh --help
 
+      - name: Test validate-bash.sh hook
+        run: |
+          BASH_CMD="bash"
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            BASH_CMD="${BREW_PREFIX}/bin/bash"
+          fi
+          $BASH_CMD .claude/hooks/test-validate-bash.sh
+
   json-validate:
     name: Validate JSON
     runs-on: ubuntu-latest

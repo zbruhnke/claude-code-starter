@@ -15,8 +15,11 @@
 
 set -euo pipefail
 
-# Read JSON input from stdin
-INPUT=$(cat)
+# Force C locale for deterministic grep character class behavior
+export LC_ALL=C
+
+# Read JSON input from stdin (cap at 8k to avoid pathological cases)
+INPUT=$(head -c 8192)
 
 # Validate we got input
 if [ -z "$INPUT" ]; then
@@ -45,51 +48,74 @@ NORMALIZED=$(echo "$COMMAND" | tr -s '[:space:]' ' ' | sed 's/^ //;s/ $//')
 # Convert to lowercase for case-insensitive matching
 LOWER=$(echo "$NORMALIZED" | tr '[:upper:]' '[:lower:]')
 
-# Function to check if command matches pattern
+# Function to check if command matches pattern (case-insensitive)
 matches() {
   local pattern="$1"
-  [[ "$NORMALIZED" == *"$pattern"* ]] || [[ "$LOWER" == *"$pattern"* ]]
+  [[ "$LOWER" == *"$pattern"* ]]
 }
 
-# Function to check with word boundaries (more precise)
+# Function to check with word boundaries (case-insensitive)
 matches_word() {
   local pattern="$1"
-  echo "$NORMALIZED" | grep -qE "(^|[^a-zA-Z])${pattern}([^a-zA-Z]|$)"
+  echo "$LOWER" | grep -qE "(^|[^a-zA-Z])${pattern}([^a-zA-Z]|$)"
+}
+
+# Function to check if rm command has recursive flags
+# Handles: -r, -rf, -fr, -R, --recursive, and combinations like -r -f
+has_rm_recursive() {
+  # Check if command starts with rm (word boundary)
+  if ! echo "$LOWER" | grep -qE '(^|[;&|])[ ]*rm[ ]'; then
+    return 1
+  fi
+  # Check for recursive flag in any form
+  echo "$LOWER" | grep -qE 'rm[^;|&]*(-[a-z]*r|-[a-z]*R|--recursive)'
+}
+
+# Function to check for dangerous rm targets
+has_dangerous_rm_target() {
+  local cmd="$LOWER"
+  # Root filesystem
+  echo "$cmd" | grep -qE 'rm[^;|&]+[ ]/([ ;|&]|$)' && return 0
+  # Root with wildcard (rm -rf /*)
+  echo "$cmd" | grep -qE 'rm[^;|&]+[ ]/\*' && return 0
+  # Home directory
+  echo "$cmd" | grep -qE 'rm[^;|&]+[ ](~|\$home|\$\{home\})' && return 0
+  # Current directory (repo wipe)
+  echo "$cmd" | grep -qE 'rm[^;|&]+[ ]\.(/|[ ;|&]|$)' && return 0
+  # Parent directory
+  echo "$cmd" | grep -qE 'rm[^;|&]+[ ]\.\.(/|[ ;|&]|$)' && return 0
+  # Path traversal
+  echo "$cmd" | grep -qE 'rm[^;|&]+[ ][^ ]*\.\./' && return 0
+  # --no-preserve-root
+  echo "$cmd" | grep -qE 'rm[^;|&]+--no-preserve-root' && return 0
+  return 1
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # BLOCKED PATTERNS - Exit 2 to block
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Destructive filesystem commands
-if matches "rm -rf /" || matches "rm -rf --no-preserve-root"; then
-  echo "BLOCKED: Recursive delete of root filesystem" >&2
+# Destructive rm commands - check for recursive + dangerous target
+# Handles: rm -rf, rm -fr, rm -r -f, rm --recursive --force, etc.
+if has_rm_recursive && has_dangerous_rm_target; then
+  echo "BLOCKED: Recursive delete of protected path" >&2
   exit 2
 fi
 
-if matches "rm -rf ~" || matches 'rm -rf $HOME' || matches 'rm -rf ${HOME}'; then
-  echo "BLOCKED: Recursive delete of home directory" >&2
-  exit 2
-fi
-
-# Check for rm -rf with path traversal
-if echo "$NORMALIZED" | grep -qE 'rm[[:space:]]+-[rf]+[[:space:]]+\.\./'; then
-  echo "BLOCKED: Recursive delete with path traversal" >&2
-  exit 2
-fi
-
-# Block disk destruction commands
+# Block disk destruction commands (case-insensitive via matches_word on $LOWER)
 if matches_word "mkfs" || matches_word "fdisk" || matches_word "parted"; then
   echo "BLOCKED: Disk formatting/partitioning command" >&2
   exit 2
 fi
 
-if matches "dd if=" && (matches "of=/dev/" || matches "of= /dev/"); then
+# Block dd writes to block devices (don't require if=, just check of=/dev/)
+if matches_word "dd" && echo "$LOWER" | grep -qE 'of=[ ]*/dev/'; then
   echo "BLOCKED: Direct disk write with dd" >&2
   exit 2
 fi
 
-if matches "> /dev/sd" || matches "> /dev/nvme" || matches "> /dev/hd"; then
+# Block direct writes to block devices via redirection
+if matches "> /dev/sd" || matches "> /dev/nvme" || matches "> /dev/hd" || matches "> /dev/disk"; then
   echo "BLOCKED: Direct write to block device" >&2
   exit 2
 fi
@@ -101,13 +127,13 @@ if matches ":(){" || matches ":(){ :|:&"; then
 fi
 
 # Block curl/wget piped to shell (common malware pattern)
-if echo "$NORMALIZED" | grep -qE '(curl|wget)[^|]*\|[^|]*(bash|sh|zsh)'; then
+if echo "$LOWER" | grep -qE '(curl|wget)[^|]*\|[^|]*(bash|sh|zsh)'; then
   echo "BLOCKED: Piping remote content to shell" >&2
   exit 2
 fi
 
-# Block chmod 777 on sensitive paths
-if matches "chmod 777 /" || matches "chmod -R 777 /"; then
+# Block chmod 777 on root or recursive on root
+if matches "chmod 777 /" || matches "chmod -r 777 /"; then
   echo "BLOCKED: Dangerous permission change" >&2
   exit 2
 fi
@@ -120,8 +146,13 @@ if matches_word "sudo"; then
   echo "WARNING: Command uses sudo - review carefully" >&2
 fi
 
-if matches "--force" || matches " -f "; then
-  echo "NOTE: Command uses force flag" >&2
+# Only warn about force flags for destructive commands (rm, mv, cp, git push)
+# Avoids noise from tools that use -f harmlessly
+if echo "$LOWER" | grep -qE '(^|[;&|])[ ]*(rm|mv|cp)[ ]' && (matches "--force" || echo "$LOWER" | grep -qE ' -[a-z]*f'); then
+  echo "NOTE: Destructive command uses force flag" >&2
+fi
+if echo "$LOWER" | grep -qE 'git[ ]+push[^;|&]+(-f|--force)'; then
+  echo "WARNING: git push with force flag" >&2
 fi
 
 if matches_word "eval"; then

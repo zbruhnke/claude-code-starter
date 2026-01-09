@@ -12,9 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bash 4 error message now shows `$(brew --prefix)` instead of hardcoded `/opt/homebrew`
 - adopt.sh security merge guidance now matches actual deny patterns shipped in settings.json
 - setup.sh security summary no longer overclaims "keys, secrets" blocking (only .env files are blocked by default)
+- validate-bash.sh: rm detection now handles flag permutations (`-fr`, `-r -f`, `--recursive`)
+- validate-bash.sh: rm detection now blocks `.`, `..`, `/*` targets
+- validate-bash.sh: dd detection no longer requires `if=` (blocks any `of=/dev/`)
+- validate-bash.sh: mkfs/fdisk/parted detection is now case-insensitive
+- validate-bash.sh: force flag warning now only triggers for rm/mv/cp/git-push (reduces noise)
 
 ### Changed
 - .claudeignore now appends missing recommended patterns instead of skipping when file exists
+- validate-bash.sh uses LC_ALL=C and 8k input cap for grep safety
+
+### Added
+- Regression test suite for validate-bash.sh hook (26 test cases)
+- validate-bash.sh tests run in CI on both Ubuntu and macOS
 
 ## [0.2.1] - 2025-01-09
 
