@@ -16,7 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI matrix testing on both Ubuntu and macOS
 - CI idempotency test (run setup.sh twice)
 - CI adopt.sh smoke test
+- SHA256 checksums in release notes for script verification
+- Checksum verification instructions in README
 - Note clarifying `rm -rf` in Uninstall section is for humans
+- Signed tag documentation in CONTRIBUTING.md
 
 ### Changed
 - Improved 5 Minute Tour to be fully copy-paste runnable

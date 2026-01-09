@@ -198,7 +198,13 @@ cp stacks/typescript/rules.md your-project/.claude/rules/
 curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/v0.1.0/setup.sh -o setup.sh
 ```
 
-See [Releases](https://github.com/zbruhnke/claude-code-starter/releases) for all versions.
+**Verify downloads** with SHA256 checksums (included in each release's notes):
+```bash
+# Check against checksum from release notes
+sha256sum setup.sh
+```
+
+See [Releases](https://github.com/zbruhnke/claude-code-starter/releases) for all versions and checksums.
 
 **Upgrade path:** Re-run `adopt.sh` to pull updated components. Your `CLAUDE.md` and `.claude/settings.local.json` won't be overwritten.
 
