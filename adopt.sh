@@ -348,7 +348,7 @@ interactive_mode() {
   echo ""
   echo -e "  ${BOLD}What would you like to adopt?${NC}"
   echo ""
-  echo "    1) Skills        - Custom slash commands (/review, /test, etc.)"
+  echo "    1) Skills        - Custom commands (review, test, explain, etc.)"
   echo "    2) Agents        - Specialized subagents (researcher, reviewer)"
   echo "    3) Hooks         - Security and auto-formatting hooks"
   echo "    4) Rules         - Reference documentation"

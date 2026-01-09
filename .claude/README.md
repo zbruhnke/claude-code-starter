@@ -22,7 +22,7 @@ Claude Code configuration directory for this project.
 │   ├── security.md
 │   ├── security-model.md
 │   └── testing.md
-└── skills/                    # Custom slash commands
+└── skills/                    # Custom skill definitions
     ├── code-review/SKILL.md
     ├── explain-code/SKILL.md
     ├── generate-tests/SKILL.md
@@ -56,9 +56,9 @@ Specialized subagents with focused capabilities and tool restrictions.
 
 ## skills/
 
-Custom slash commands. Each skill is a directory containing `SKILL.md` with YAML frontmatter.
+Custom skills invoked via semantic matching. Each skill is a directory containing `SKILL.md` with YAML frontmatter.
 
-**Usage**: `/review-mr` or `/code-review src/`
+**Usage**: "Review my staged changes" or "Explain how this code works"
 
 ## hooks/
 

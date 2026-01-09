@@ -29,7 +29,7 @@ Most developers install Claude Code and use maybe 10% of its capabilities. This 
 
 - **Stack-specific presets** - TypeScript, Python, Go, Rust, Ruby, Elixir configurations
 - **Security by default** - Blocked sensitive files, dangerous command prevention
-- **Custom skills** - Slash commands like `/review`, `/test`, `/explain`
+- **Custom skills** - Reusable commands like review, test, explain
 - **Specialized agents** - Subagents for research, code review, test writing
 - **Pre-commit review** - Forces you to understand what you're committing
 - **Auto-formatting** - Runs your formatter after every edit
@@ -142,6 +142,18 @@ cp stacks/typescript/rules.md your-project/.claude/rules/
 
 ---
 
+## Documentation
+
+| Topic | Description |
+|-------|-------------|
+| [Skills](docs/skills.md) | Creating and using custom skills |
+| [Agents](docs/agents.md) | Specialized subagents for focused tasks |
+| [Hooks](docs/hooks.md) | Automation via PreToolUse/PostToolUse |
+| [Permissions](docs/permissions.md) | Allow/deny rules and patterns |
+| [PR Reviews](docs/pr-reviews.md) | Automated CI/CD code reviews |
+
+---
+
 ## Stability & Versioning
 
 **Current status:** Pre-release. The file structure and core concepts are stable, but details may change.
@@ -185,7 +197,7 @@ your-project/
 │   │   ├── security.md
 │   │   ├── security-model.md
 │   │   └── testing.md
-│   ├── skills/                  # Custom slash commands
+│   ├── skills/                  # Custom skill definitions
 │   │   ├── code-review/SKILL.md
 │   │   ├── explain-code/SKILL.md
 │   │   ├── generate-tests/SKILL.md
@@ -261,257 +273,63 @@ make lint         # ruff + mypy
 
 ---
 
-### Skills - Custom Commands
+### Skills
 
-Skills are slash commands that give Claude specific instructions.
+Skills are reusable instruction sets that Claude applies via semantic matching. Describe what you want, and Claude applies the relevant skill automatically.
 
-**Directory structure:**
-```
-.claude/skills/
-├── code-review/
-│   └── SKILL.md
-├── explain-code/
-│   └── SKILL.md
-└── generate-tests/
-    └── SKILL.md
-```
+**Included skills:** `code-review`, `explain-code`, `generate-tests`, `refactor-code`, `review-mr`, `install-precommit`
 
-**Skill file format (YAML frontmatter + instructions):**
-```markdown
----
-name: code-review
-description: Review code changes for quality, security, and best practices
-tools: Read, Grep, Glob, Bash
-model: opus
----
-
-You are an expert code reviewer. When activated:
-
-1. First, understand what changed (git diff or file read)
-2. Check for:
-   - Security issues (injection, auth bypass, data exposure)
-   - Performance problems (N+1 queries, memory leaks)
-   - Code style violations
-   - Missing error handling
-   - Missing tests
-
-3. Format your review as:
-   ## Summary
-   [One paragraph overview]
-
-   ## Issues
-   - [Critical/Warning/Info] Description
-
-   ## Suggestions
-   - Improvement ideas
-```
-
-**Using skills:**
-
-Skills are invoked via semantic matching - describe what you want, and Claude applies the relevant skill:
+**Example usage:**
 ```
 "Review my staged changes"              # Triggers code-review skill
 "Explain how src/utils.py works"        # Triggers explain-code skill
 "Generate tests for UserService"        # Triggers generate-tests skill
-"Review this merge request"             # Triggers review-mr skill
 ```
 
-**Available skills:**
-
-| Skill | Description | Model |
-|-------|-------------|-------|
-| `code-review` | Review code for quality, security, and best practices | opus |
-| `explain-code` | Explain how code works in detail | opus |
-| `generate-tests` | Generate comprehensive tests for code | opus |
-| `refactor-code` | Improve code without changing behavior | opus |
-| `review-mr` | Review merge/pull requests | opus |
-| `install-precommit` | Install the pre-commit review hook | haiku |
-
-**Creating your own skill:**
-1. Create directory: `.claude/skills/my-skill/`
-2. Create `SKILL.md` with YAML frontmatter
-3. Define `name`, `description`, `tools`, and `model`
-4. Write instructions below the frontmatter
+→ **[Full documentation: docs/skills.md](docs/skills.md)**
 
 ---
 
-### Agents - Specialized Subagents
+### Agents
 
-Agents are focused AI assistants with limited tool access.
+Agents are focused AI assistants with limited tool access, useful for delegating specific tasks.
 
-**Agent file format:**
-```markdown
----
-name: researcher
-description: Explore and understand codebases without making changes
-tools: Read, Grep, Glob, WebSearch, WebFetch
-model: sonnet
----
+**Included agents:** `researcher` (read-only exploration), `code-reviewer`, `test-writer`
 
-You are a research assistant. Your job is to understand code, not change it.
-
-When asked to research:
-1. Start broad - understand the overall structure
-2. Find relevant files using Grep and Glob
-3. Read and understand the code
-4. Explain clearly with file:line references
-
-Never suggest changes. Only explain what exists.
-```
-
-**Available agent fields:**
-- `name`: Identifier for the agent
-- `description`: When to use this agent
-- `tools`: Comma-separated list of allowed tools
-- `model`: `sonnet` (fast), `opus` (thorough), `haiku` (quick tasks)
-
-**Using agents:**
+**Example usage:**
 ```
 Use the researcher agent to understand how authentication works
-
-Use the code-reviewer agent to review my changes to the payment module
-
-Use the test-writer agent to generate tests for the UserService class
+Use the test-writer agent to generate tests for UserService
 ```
 
-**Included agents:**
-| Agent | Purpose | Tools | Model |
-|-------|---------|-------|-------|
-| `researcher` | Read-only exploration | Read, Grep, Glob, WebSearch, WebFetch | sonnet |
-| `code-reviewer` | Thorough code review | Read, Grep, Glob (read-only) | opus |
-| `test-writer` | Generate comprehensive tests | Read, Grep, Glob, Edit, Write, Bash | opus |
+→ **[Full documentation: docs/agents.md](docs/agents.md)**
 
 ---
 
-### Hooks - Automation
+### Hooks
 
-Hooks run scripts at specific points in Claude's workflow.
-
-**Hook types:**
-- `PreToolUse` - Before Claude uses a tool (can block)
-- `PostToolUse` - After Claude uses a tool
-- `Stop` - When Claude finishes responding
-
-**Configuration in `.claude/settings.json`:**
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/validate-bash.sh",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.sh",
-            "timeout": 30
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-**Hook scripts receive JSON on stdin:**
-```json
-{
-  "tool_name": "Bash",
-  "tool_input": {
-    "command": "rm -rf node_modules"
-  }
-}
-```
-
-**Blocking a tool (exit code 2):**
-```bash
-#!/bin/bash
-INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
-
-if [[ "$COMMAND" == *"rm -rf /"* ]]; then
-  echo "BLOCKED: Dangerous command" >&2
-  exit 2  # Exit code 2 = block the tool
-fi
-
-exit 0  # Exit code 0 = allow
-```
+Hooks run scripts at specific points in Claude's workflow for validation and automation.
 
 **Included hooks:**
-| Hook | Purpose |
-|------|---------|
-| `validate-bash.sh` | Block dangerous shell commands |
-| `auto-format.sh` | Run formatter after file edits |
-| `pre-commit-review.sh` | Review changes before committing |
+- `validate-bash.sh` - Block dangerous shell commands (PreToolUse)
+- `auto-format.sh` - Run formatter after file edits (PostToolUse)
+- `pre-commit-review.sh` - Review changes before git commits
+
+→ **[Full documentation: docs/hooks.md](docs/hooks.md)**
 
 ---
 
-### Permissions - Security
+### Permissions
 
-Control what Claude can and cannot do.
+Control what Claude can and cannot do via allow/deny rules in `.claude/settings.json`.
 
-**In `.claude/settings.json` (base configuration):**
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(git status)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git branch:*)",
-      "Bash(git checkout:*)",
-      "Bash(git stash:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(ls:*)",
-      "Bash(pwd)",
-      "Bash(which:*)",
-      "Bash(echo:*)",
-      "Bash(mkdir:*)"
-    ],
-    "deny": [
-      "Read(.env)",
-      "Read(.env.*)",
-      "Edit(.env)",
-      "Edit(.env.*)",
-      "Write(.env)",
-      "Write(.env.*)",
-      "Bash(rm -rf:*)",
-      "Bash(rm -r:*)",
-      "Bash(sudo:*)",
-      "Bash(chmod 777:*)",
-      "Bash(curl:*|bash)",
-      "Bash(curl:*|sh)",
-      "Bash(wget:*|bash)",
-      "Bash(wget:*|sh)"
-    ]
-  }
-}
-```
-
-**Note:** Destructive operations like `rm`, `mv`, `cp` are intentionally **not** in the default allow list. Claude will prompt for permission when needed. Add them to `.claude/settings.local.json` if you trust Claude with file operations.
-
-Stack-specific presets (in `stacks/*/settings.json`) add language-specific permissions like `npm`, `pytest`, `cargo`, etc., plus additional protections like `Read(**/secrets/**)`.
-
-**Pattern syntax:**
-- `*` matches anything within a segment
-- `:*` after a command matches any arguments
-- `**` matches across directory boundaries
+**Default posture:** Safe operations allowed (git, ls, pwd), dangerous operations denied (rm -rf, sudo, .env access). Unlisted commands prompt for approval.
 
 **Configuration scopes:**
-- `.claude/settings.json` - Team defaults, committed to repo
-- `.claude/settings.local.json` - Personal overrides, git-ignored
+- `.claude/settings.json` - Team defaults (committed)
+- `.claude/settings.local.json` - Personal overrides (git-ignored)
+
+→ **[Full documentation: docs/permissions.md](docs/permissions.md)**
 
 ---
 
@@ -652,89 +470,22 @@ These are used to populate your CLAUDE.md template. If no `.tool-versions` exist
 
 Get AI-powered code reviews automatically on every pull request.
 
-#### Standalone Script
-
-Review any branch from the command line:
-
+**Quick start:**
 ```bash
-# Review current branch vs main
-./review-mr.sh
+# Command line
+./review-mr.sh                    # Review current branch
+./review-mr.sh --pr 123           # Review GitHub PR
 
-# Review specific branch
-./review-mr.sh feature-auth
-
-# Review against different base
-./review-mr.sh feature-auth develop
-
-# Review GitHub PR by number
-./review-mr.sh --pr 123
-
-# Output as markdown (for posting)
-./review-mr.sh --format markdown > review.md
-```
-
-#### GitHub Actions
-
-Add automatic PR reviews to your GitHub repo:
-
-```bash
-# Copy the workflow
-mkdir -p .github/workflows
+# GitHub Actions
 cp .github/workflows/pr-review.yml your-repo/.github/workflows/
+# Add ANTHROPIC_API_KEY to repo secrets
 
-# Add your Anthropic API key to repo secrets
-# Settings > Secrets > Actions > New repository secret
-# Name: ANTHROPIC_API_KEY
+# GitLab CI
+# Add to .gitlab-ci.yml: include: - local: 'ci/gitlab-mr-review.yml'
+# Set ANTHROPIC_API_KEY and GITLAB_TOKEN in CI/CD variables
 ```
 
-Every PR will automatically get a Claude review as a comment:
-- Runs on PR open, new commits, and reopen
-- Updates existing comment instead of spamming
-- Can be manually triggered for any PR
-
-#### GitLab CI
-
-Add automatic MR reviews to your GitLab repo:
-
-```yaml
-# In your .gitlab-ci.yml
-include:
-  - local: 'ci/gitlab-mr-review.yml'
-
-# Or copy the job directly from ci/gitlab-mr-review.yml
-```
-
-Required CI/CD variables:
-- `ANTHROPIC_API_KEY` - Your Anthropic API key
-- `GITLAB_TOKEN` - GitLab token with `api` scope for posting comments
-
-#### Data & Privacy
-
-When using automated PR/MR reviews, understand what's sent to Anthropic:
-
-**What's transmitted:**
-- The diff of changed files
-- File paths and names
-- Commit messages
-- PR/MR title and description
-
-**What's NOT transmitted:**
-- Unchanged files (unless explicitly referenced)
-- Repository secrets (unless they're in the diff)
-- Git history beyond the current PR
-
-**Recommendations for sensitive repos:**
-- Review the workflow file before enabling
-- Don't enable on repos with secrets in code (fix that first)
-- Use environment-scoped secrets with minimal permissions
-- Consider self-hosted runners for regulated environments
-- Disable on forks if your repo is public
-
-**Token scopes (least privilege):**
-- GitHub: `contents: read`, `pull-requests: write`
-- GitLab: `api` scope (required for MR comments)
-
-If your organization has data residency requirements, consult your security team before enabling automated reviews.
+→ **[Full documentation: docs/pr-reviews.md](docs/pr-reviews.md)** (includes data privacy details)
 
 ---
 
