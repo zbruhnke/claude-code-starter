@@ -77,21 +77,32 @@ has_rm_recursive() {
 # Function to check for dangerous rm targets
 has_dangerous_rm_target() {
   local cmd="$LOWER"
-  # Root filesystem: rm ... / (standalone)
-  # Note: terminators include ) for subshell syntax like (rm -rf /)
-  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]/([[:space:];|&)]|$)' && return 0
-  # Root with wildcard: rm ... /*
-  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]/\*' && return 0
-  # Home directory
-  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]](~|\$home|\${home})([[:space:];|&)]|$)' && return 0
-  # Current directory (repo wipe): rm ... .
-  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]\.([[:space:];|&)/]|$)' && return 0
-  # Parent directory: rm ... ..
-  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]\.\.([[:space:];|&)/]|$)' && return 0
-  # Path traversal: rm ... something/../
+
+  # Root filesystem: standalone "/" followed by terminator or EOL
+  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]+/([[:space:];|&)]|$)' && return 0
+
+  # Root wildcard: "/*"
+  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]+/\*' && return 0
+
+  # Home directory: "~", "$home", "${home}"
+  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]+(~|\$home|\$\{home\})([[:space:];|&)]|$)' && return 0
+
+  # Current directory: "." followed by terminator or EOL
+  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]+\.([[:space:];|&)]|$)' && return 0
+  # Current directory: "./" prefix
+  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]+\./' && return 0
+
+  # Parent directory: ".." followed by terminator or EOL
+  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]+\.\.([[:space:];|&)]|$)' && return 0
+  # Parent directory: "../" prefix
+  echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]]+\.\./' && return 0
+
+  # Path traversal in an arg: something/../
   echo "$cmd" | grep -qE 'rm[^;|&]*[[:space:]][^[:space:]]*\.\./' && return 0
-  # --no-preserve-root
+
+  # --no-preserve-root flag
   echo "$cmd" | grep -qE 'rm[^;|&]*--no-preserve-root' && return 0
+
   return 1
 }
 
