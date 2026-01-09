@@ -71,7 +71,8 @@ has_rm_recursive() {
     return 1
   fi
   # Look for recursive flags after rm (handles -r, -rf, -fr, --recursive, split flags)
-  echo "$cmd" | grep -qE '(^|[;&|()]|[[:space:]])(sudo[[:space:]]+)?(command[[:space:]]+)?\\?rm[^;|&]*([[:space:]]-[a-z]*r|[[:space:]]--recursive)'
+  # Note: [^;|&)]* stops at ) for subshell consistency
+  echo "$cmd" | grep -qE '(^|[;&|()]|[[:space:]])(sudo[[:space:]]+)?(command[[:space:]]+)?\\?rm[^;|&)]*([[:space:]]-[a-z]*r|[[:space:]]--recursive)'
 }
 
 # Function to check for dangerous rm targets
