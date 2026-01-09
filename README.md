@@ -169,11 +169,13 @@ cp stacks/typescript/rules.md your-project/.claude/rules/
 - Default permissions in presets
 - Included skills/agents/rules content
 
-**For reproducible installs**, pin to a specific commit:
+**For reproducible installs**, pin to a release tag:
 ```bash
-# Instead of main, use a commit SHA
-curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/<SHA>/setup.sh -o setup.sh
+# Use a specific version instead of main
+curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/v0.1.0/setup.sh -o setup.sh
 ```
+
+See [Releases](https://github.com/zbruhnke/claude-code-starter/releases) for all versions.
 
 **Upgrade path:** Re-run `adopt.sh` to pull updated components. Your `CLAUDE.md` and `.claude/settings.local.json` won't be overwritten.
 
