@@ -87,7 +87,8 @@ track_dir() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 print_header() {
-  clear
+  # Only clear if we have a terminal
+  [ -t 1 ] && clear 2>/dev/null || true
   echo ""
   echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo -e "${BLUE}  Claude Code Starter${NC}"
