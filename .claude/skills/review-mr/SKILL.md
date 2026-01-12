@@ -2,7 +2,6 @@
 name: review-mr
 description: Review a merge request or branch. Compares a branch against main/master, summarizes changes, highlights concerns, and provides actionable feedback. Use for PR reviews or before merging.
 tools: Read, Grep, Glob, Bash
-model: opus
 user-invocable: true
 ---
 

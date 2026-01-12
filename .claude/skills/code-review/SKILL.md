@@ -2,7 +2,6 @@
 name: code-review
 description: Review code changes for quality, security, and best practices. Use when reviewing staged changes, pull requests, or specific files before merging.
 tools: Read, Grep, Glob, Bash
-model: opus
 user-invocable: true
 ---
 

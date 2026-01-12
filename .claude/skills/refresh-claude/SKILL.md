@@ -2,7 +2,6 @@
 name: refresh-claude
 description: Review recent changes and update CLAUDE.md to keep it relevant for future sessions. Use after significant changes or periodically to maintain context.
 tools: Read, Grep, Glob, Edit, Write, Bash
-model: opus
 user-invocable: true
 ---
 

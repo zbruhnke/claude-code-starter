@@ -2,7 +2,6 @@
 name: generate-tests
 description: Generate comprehensive tests for code. Use when adding test coverage, implementing TDD, or ensuring code reliability.
 tools: Read, Grep, Glob, Edit, Write, Bash
-model: opus
 user-invocable: true
 ---
 

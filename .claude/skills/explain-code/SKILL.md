@@ -2,7 +2,6 @@
 name: explain-code
 description: Explain how code works in detail. Use when trying to understand unfamiliar code, complex logic, or system architecture.
 tools: Read, Grep, Glob
-model: opus
 user-invocable: true
 ---
 

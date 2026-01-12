@@ -2,7 +2,6 @@
 name: refactor-code
 description: Refactor code to improve clarity and maintainability without changing behavior. Use when improving readability, reducing complexity, or eliminating duplication.
 tools: Read, Grep, Glob, Edit, Write, Bash
-model: opus
 user-invocable: true
 ---
 
