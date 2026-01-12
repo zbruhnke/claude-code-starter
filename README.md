@@ -79,6 +79,8 @@ curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/main/i
 
 This installs `ccs` (short alias) and `claude-code-starter` (full name) to your PATH.
 
+The installer automatically verifies SHA256 checksums when available (v0.7.0+).
+
 **Update:**
 ```bash
 ccs update

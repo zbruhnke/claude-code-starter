@@ -169,17 +169,42 @@ Examples:
 
 ## Releasing (Maintainers Only)
 
-```bash
-# Create annotated tag
-git tag -a v0.2.0 -m "v0.2.0 - Brief description"
-git push origin v0.2.0
+### Release checklist
 
-# GitHub Actions automatically:
-# - Runs validation (shellcheck, syntax, JSON)
-# - Generates SHA256 checksums for scripts
-# - Generates release notes from commits
-# - Creates GitHub release
+```bash
+# 1. Update VERSION file
+echo "v0.7.0" > VERSION
+
+# 2. Update CHANGELOG.md (move Unreleased to new version)
+
+# 3. Commit version bump
+git add VERSION CHANGELOG.md
+git commit -m "chore: bump version to v0.7.0"
+
+# 4. Create annotated tag
+git tag -a v0.7.0 -m "v0.7.0 - Brief description"
+
+# 5. Push commit and tag
+git push origin main v0.7.0
+
+# 6. Generate checksums (after tag is pushed)
+./scripts/generate-checksums.sh v0.7.0
+
+# 7. Create GitHub release and upload checksums
+gh release create v0.7.0 --generate-notes
+gh release upload v0.7.0 checksums.txt
+
+# 8. Update Homebrew tap
+./homebrew/update-formula.sh v0.7.0
+cp homebrew/Formula/claude-code-starter.rb ~/projects/homebrew-claude-code-starter/Formula/
+cd ~/projects/homebrew-claude-code-starter
+git commit -am "Update to v0.7.0" && git push
 ```
+
+### Checksum verification
+
+Starting with v0.7.0, releases include `checksums.txt` for install verification.
+The installer automatically verifies downloads when checksums are available.
 
 **Signed tags (recommended for production releases):**
 ```bash

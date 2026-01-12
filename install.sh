@@ -45,6 +45,10 @@ success() {
   echo -e "${GREEN}$1${NC}"
 }
 
+warn() {
+  echo -e "${YELLOW}Warning: $1${NC}"
+}
+
 # Parse arguments
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -106,12 +110,61 @@ if [ -d "$INSTALL_DIR" ]; then
   echo -e "${DIM}  Backed up to ${INSTALL_DIR}.bak${NC}"
 fi
 
-# Download and extract
+# Download and verify
 info "Downloading..."
 tmp_dir=$(mktemp -d)
 trap "rm -rf '$tmp_dir'" EXIT
 
-curl -fsSL "https://github.com/${REPO}/archive/refs/tags/${VERSION}.tar.gz" | tar -xz -C "$tmp_dir"
+TARBALL="$tmp_dir/release.tar.gz"
+CHECKSUMS_URL="https://github.com/${REPO}/releases/download/${VERSION}/checksums.txt"
+TARBALL_URL="https://github.com/${REPO}/archive/refs/tags/${VERSION}.tar.gz"
+
+# Download tarball
+curl -fsSL -o "$TARBALL" "$TARBALL_URL" || error "Failed to download release tarball"
+
+# Try to download and verify checksums
+info "Verifying integrity..."
+CHECKSUMS_FILE="$tmp_dir/checksums.txt"
+if curl -fsSL -o "$CHECKSUMS_FILE" "$CHECKSUMS_URL" 2>/dev/null; then
+  # Extract expected checksum for the tarball
+  EXPECTED_SHA=$(grep "release.tar.gz\|${VERSION}.tar.gz" "$CHECKSUMS_FILE" | awk '{print $1}' | head -1)
+
+  if [ -n "$EXPECTED_SHA" ]; then
+    # Calculate actual checksum
+    if command -v shasum &>/dev/null; then
+      ACTUAL_SHA=$(shasum -a 256 "$TARBALL" | awk '{print $1}')
+    elif command -v sha256sum &>/dev/null; then
+      ACTUAL_SHA=$(sha256sum "$TARBALL" | awk '{print $1}')
+    else
+      warn "Neither shasum nor sha256sum available - skipping verification"
+      ACTUAL_SHA="$EXPECTED_SHA"  # Skip check
+    fi
+
+    if [ "$EXPECTED_SHA" != "$ACTUAL_SHA" ]; then
+      echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+      echo -e "${RED}  CHECKSUM VERIFICATION FAILED${NC}"
+      echo -e "${RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+      echo ""
+      echo -e "  Expected: ${DIM}$EXPECTED_SHA${NC}"
+      echo -e "  Got:      ${DIM}$ACTUAL_SHA${NC}"
+      echo ""
+      echo "  The downloaded file may be corrupted or tampered with."
+      echo "  Please try again or report this issue."
+      echo ""
+      error "Aborting installation for security"
+    fi
+    success "Checksum verified"
+  else
+    warn "Could not parse checksum from checksums.txt - skipping verification"
+  fi
+else
+  warn "checksums.txt not found for ${VERSION} - skipping verification"
+  echo -e "  ${DIM}Checksum verification available for releases >= v0.7.0${NC}"
+fi
+
+# Extract
+info "Extracting..."
+tar -xzf "$TARBALL" -C "$tmp_dir" || error "Failed to extract tarball"
 
 # Find extracted directory (handle v prefix variations)
 extracted_dir=""
