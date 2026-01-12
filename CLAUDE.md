@@ -46,9 +46,22 @@ Skills are invoked automatically when your request matches their description:
 Use these specialized agents for focused tasks:
 - **researcher**: Explore and understand code (read-only)
 - **code-reviewer**: Thorough code reviews
-- **test-writer**: Generate tests
+- **code-simplifier**: Simplify code for clarity and maintainability
+- **test-writer**: Generate comprehensive tests
+- **ralph-loop**: Autonomous implementation from spec/PRD with quality gates
 
-Example: "Use the researcher agent to understand how the setup script works"
+### Ralph Loop Agent
+
+The ralph-loop agent takes a specification or PRD and autonomously implements it to completion. It coordinates with other agents to ensure quality:
+
+1. **Implements** the spec iteratively
+2. **Consults researcher** when stuck
+3. **Uses test-writer** for comprehensive test coverage
+4. **Gets code-reviewer** feedback on quality/security
+5. **Applies code-simplifier** for clarity
+6. **Only finishes** when ALL agents approve
+
+Example: "Use the ralph-loop agent to implement this feature spec: [paste spec]"
 
 ## Project Structure
 
@@ -65,7 +78,9 @@ Example: "Use the researcher agent to understand how the setup script works"
 ├── agents/                    # Specialized subagents
 │   ├── researcher.md
 │   ├── code-reviewer.md
-│   └── test-writer.md
+│   ├── code-simplifier.md
+│   ├── test-writer.md
+│   └── ralph-loop.md
 ├── hooks/                     # Automation scripts
 │   ├── validate-bash.sh       # Pre-command validation
 │   ├── auto-format.sh         # Post-edit formatting
