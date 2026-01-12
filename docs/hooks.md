@@ -149,19 +149,19 @@ exit 0
 
 ---
 
-## Pre-Commit Review Hook (Critical for AI-Assisted Development)
+## Pre-Commit Review Hook
 
-The `pre-commit-review.sh` hook is **the most important safety mechanism** when using AI coding assistants. It forces human review before any code enters your repository.
+The `pre-commit-review.sh` hook enforces human review before commits. We believe this is an important best practice when using AI coding assistants - it ensures you understand what you're pushing and why.
 
 ### Why Human Review Matters
 
-When working with AI assistants like Claude Code, it's easy to fall into **"vibe coding"** - accepting generated code without truly understanding it. This is dangerous because:
+When working with AI assistants like Claude Code, it's easy to fall into **"vibe coding"** - accepting generated code without fully understanding it. Taking a moment to review helps because:
 
 1. **You're responsible for your codebase**, not the AI
 2. **AI can make subtle mistakes** that look correct but aren't
-3. **Security vulnerabilities** can be introduced without obvious signs
-4. **Technical debt accumulates** when you don't understand what's being added
-5. **Debugging becomes impossible** if you don't know how code works
+3. **Security issues** are easier to catch when you're paying attention
+4. **Technical debt** is easier to manage when you understand what's being added
+5. **Debugging is easier** when you know how the code works
 
 ### What the Hook Does
 
@@ -221,14 +221,14 @@ chmod +x .git/hooks/pre-commit
 /install-precommit
 ```
 
-### Bypassing (Use Sparingly)
+### Bypassing
 
 ```bash
-# Skip review for emergency fixes only
-SKIP_PRE_COMMIT_REVIEW=1 git commit -m "Emergency hotfix"
+# Skip review when needed
+SKIP_PRE_COMMIT_REVIEW=1 git commit -m "Quick fix"
 ```
 
-**Every bypass should make you uncomfortable.** If you're bypassing regularly, you're accumulating risk.
+If you find yourself bypassing frequently, consider whether you're getting full value from the review step.
 
 ### Non-Interactive Mode
 
