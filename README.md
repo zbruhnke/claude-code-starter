@@ -57,20 +57,46 @@ Most developers install Claude Code and use maybe 10% of its capabilities. This 
 
 ---
 
+## Installation
+
+```bash
+# Install (one-time)
+curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/main/install.sh | bash
+```
+
+This installs to `~/.claude-code-starter` and adds `claude-code-starter` to your PATH.
+
+**Update anytime:**
+```bash
+claude-code-starter update
+```
+
+**Pin to a specific version:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/main/install.sh | bash -s -- --version <version>
+```
+
+---
+
 ## 5 Minute Tour
 
 See it work end-to-end:
 
 ```bash
-# 1. Setup (takes ~2 min)
-git clone https://github.com/zbruhnke/claude-code-starter.git my-app
-cd my-app && ./setup.sh    # Pick TypeScript, accept defaults
+# 1. Install the CLI (if you haven't already)
+curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/main/install.sh | bash
+source ~/.zshrc  # or restart your terminal
 
-# 2. Create something to work with
+# 2. Create your project and configure it
+mkdir my-app && cd my-app
+git init
+claude-code-starter init    # Pick TypeScript, accept defaults
+
+# 3. Create something to work with
 mkdir -p src && echo "export const hello = () => 'world';" > src/utils.ts
 git add -A
 
-# 3. Start Claude Code
+# 4. Start Claude Code
 claude
 ```
 
@@ -92,15 +118,39 @@ That's the core loop: **edit → auto-format → review → commit with understa
 
 ## Quick Start
 
-### Option 1: New Project (Start Fresh)
-
-Use this when starting a **brand new project** from scratch:
+### New Project
 
 ```bash
-# Clone as your new project
-git clone https://github.com/zbruhnke/claude-code-starter.git my-project
-cd my-project
-./setup.sh
+mkdir my-project && cd my-project
+git init
+claude-code-starter init
+```
+
+### Existing Project
+
+```bash
+cd your-existing-project
+claude-code-starter init
+```
+
+### Add Specific Components
+
+```bash
+claude-code-starter adopt skills       # Just skills
+claude-code-starter adopt agents       # Just agents
+claude-code-starter adopt precommit    # Pre-commit review hook
+claude-code-starter adopt security     # Security config only
+claude-code-starter adopt stack        # Stack-specific preset
+```
+
+### CLI Reference
+
+```bash
+claude-code-starter help              # Show all commands
+claude-code-starter init              # Interactive setup
+claude-code-starter adopt [component] # Add components
+claude-code-starter update            # Update to latest version
+claude-code-starter version           # Show version
 ```
 
 The setup script will:
@@ -111,87 +161,45 @@ The setup script will:
 5. Select components to install (rules, skills, agents, hooks)
 6. Generate all configuration files
 
-### Option 2: Existing Project (Add to Your Codebase)
+---
 
-Use this when you have an **existing project** and want to add Claude Code configuration:
+## Alternative Installation Methods
 
-Use `adopt.sh` to selectively add components:
+<details>
+<summary>Manual installation without the CLI</summary>
+
+### Clone and run directly
 
 ```bash
-# Clone the starter repo somewhere
 git clone https://github.com/zbruhnke/claude-code-starter.git ~/claude-code-starter
-
-# From your project, run adopt interactively
-cd your-existing-project
-~/claude-code-starter/adopt.sh
-
-# Or adopt specific components directly
-~/claude-code-starter/adopt.sh skills      # Just skills
-~/claude-code-starter/adopt.sh agents      # Just agents
-~/claude-code-starter/adopt.sh precommit   # Just pre-commit hook
-~/claude-code-starter/adopt.sh security    # Security config
-~/claude-code-starter/adopt.sh stack       # Stack-specific preset
-~/claude-code-starter/adopt.sh skill review-mr  # Single skill
+cd your-project
+~/claude-code-starter/setup.sh
 ```
 
-### Option 3: Full Setup on Existing Project
+### Download a specific release
 
-**Recommended (inspect first):**
 ```bash
-cd your-existing-project
-curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/main/setup.sh -o setup.sh
-less setup.sh          # Review the script first
-chmod +x setup.sh && ./setup.sh
+curl -fsSL https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/<version>.tar.gz | tar -xz
+cd your-project
+~/claude-code-starter-0.4.0/setup.sh
 ```
 
-> **Note:** The deny-list blocks `curl | bash` to prevent Claude from running piped scripts. That protection is for the AI agent, not for you. You're a human who can (and should) inspect scripts before running them.
+### Copy files manually
 
-### Option 4: Manual Setup
-
-Copy what you need:
 ```bash
 # Core files
 cp CLAUDE.template.md your-project/CLAUDE.md
 cp .claudeignore your-project/
 cp -r .claude your-project/
 
-# Stack-specific preset (contains CLAUDE.md, rules.md, settings.json)
+# Stack-specific preset
 cp stacks/typescript/CLAUDE.md your-project/CLAUDE.md
 cp stacks/typescript/settings.json your-project/.claude/
-cp stacks/typescript/rules.md your-project/.claude/rules/
 ```
 
-> **Note**: Stack templates contain `{{PLACEHOLDER}}` variables (e.g., `{{PROJECT_NAME}}`, `{{CMD_TEST}}`). When copying manually, you'll need to replace these yourself. Running `setup.sh` handles substitution automatically.
+> **Note**: Stack templates contain `{{PLACEHOLDER}}` variables. Manual copies require replacing these yourself.
 
-### Option 5: Download Release
-
-Download a specific release without git:
-
-```bash
-# Download and extract a release
-curl -fsSL https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/v0.4.0.tar.gz | tar -xz
-
-# Option A: Run setup in your project directory
-cd your-project
-~/claude-code-starter-0.4.0/setup.sh
-
-# Option B: Use adopt.sh to add specific components
-cd your-project
-~/claude-code-starter-0.4.0/adopt.sh skills
-~/claude-code-starter-0.4.0/adopt.sh agents
-
-# Option C: Copy files manually
-cp -r ~/claude-code-starter-0.4.0/.claude your-project/
-cp ~/claude-code-starter-0.4.0/.claudeignore your-project/
-```
-
-**Why use a release?**
-- Reproducible setup - same version every time
-- No git required on the target machine
-- CI/CD pipelines that need a specific version
-- Air-gapped environments (download once, use offline)
-
-See [Releases](https://github.com/zbruhnke/claude-code-starter/releases) for all versions.
+</details>
 
 ---
 
@@ -222,27 +230,19 @@ See [Releases](https://github.com/zbruhnke/claude-code-starter/releases) for all
 - Default permissions in presets
 - Included skills/agents/rules content
 
-**For reproducible installs**, pin to a release tag:
+**For reproducible installs**, pin to a specific version:
 ```bash
-# Download just setup.sh from a specific version
-curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/v0.4.0/setup.sh -o setup.sh
-
-# Or download the full release archive (see Option 5 in Quick Start)
-curl -fsSL https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/v0.4.0.tar.gz | tar -xz
+curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/main/install.sh | bash -s -- --version <version>
 ```
 
-**Verify downloads** with SHA256 checksums (included in each release's notes):
+**Upgrade to latest:**
 ```bash
-# Linux
-echo "CHECKSUM  setup.sh" | sha256sum -c -
-
-# macOS
-echo "CHECKSUM  setup.sh" | shasum -a 256 -c -
+claude-code-starter update
 ```
 
-See [Releases](https://github.com/zbruhnke/claude-code-starter/releases) for all versions and checksums.
+This downloads the latest release while preserving your project's `CLAUDE.md` and `.claude/settings.local.json`.
 
-**Upgrade path:** Re-run `adopt.sh` to pull updated components. Your `CLAUDE.md` and `.claude/settings.local.json` won't be overwritten.
+See [Releases](https://github.com/zbruhnke/claude-code-starter/releases) for all versions.
 
 ---
 
@@ -601,7 +601,17 @@ Rules in `.claude/rules/` are reference documentation, not automatically loaded 
 
 ## Uninstall
 
-To completely remove Claude Code Starter from a project:
+### Uninstall the CLI
+
+```bash
+# Remove the installation
+rm -rf ~/.claude-code-starter
+
+# Remove PATH entry from your shell config (~/.zshrc, ~/.bashrc, etc.)
+# Delete the lines containing "claude-code-starter"
+```
+
+### Remove from a project
 
 > **Note:** These commands are for you (human). Claude Code is blocked from running `rm -rf`.
 
@@ -616,12 +626,7 @@ rm -f .git/hooks/pre-commit
 # CI workflows (if copied)
 rm -f .github/workflows/pr-review.yml
 rm -f ci/gitlab-mr-review.yml
-
-# Clean up .gitignore entries (optional)
-# Remove lines: CLAUDE.local.md, .claude/settings.local.json
 ```
-
-**If you used adopt.sh:** Only the components you installed need removal. Check what exists in `.claude/` before deleting.
 
 **Secrets:** Remove `ANTHROPIC_API_KEY` from your CI/CD secrets if you added it for PR reviews.
 
@@ -633,7 +638,7 @@ PRs welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 **Quick quality check:**
 ```bash
-shellcheck --severity=warning setup.sh adopt.sh review-mr.sh lib/common.sh .claude/hooks/*.sh
+shellcheck --severity=warning setup.sh adopt.sh install.sh review-mr.sh bin/claude-code-starter lib/common.sh .claude/hooks/*.sh
 for f in .claude/settings.json stacks/*/settings.json; do jq . "$f" > /dev/null; done
 ```
 

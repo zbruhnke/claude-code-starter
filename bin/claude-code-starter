@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+#
+# claude-code-starter - CLI for Claude Code configuration
+#
+# Usage:
+#   claude-code-starter init [options]     Run interactive setup
+#   claude-code-starter adopt [component]  Add components to existing project
+#   claude-code-starter update             Update to latest version
+#   claude-code-starter version            Show version
+#   claude-code-starter help               Show this help
+#
+
+set -euo pipefail
+
+# Resolve the installation directory
+# Works whether running from source, symlink, or installed location
+resolve_install_dir() {
+  local source="${BASH_SOURCE[0]}"
+  while [ -L "$source" ]; do
+    local dir="$(cd -P "$(dirname "$source")" && pwd)"
+    source="$(readlink "$source")"
+    [[ $source != /* ]] && source="$dir/$source"
+  done
+  local bin_dir="$(cd -P "$(dirname "$source")" && pwd)"
+
+  # If we're in a bin/ directory, go up one level
+  if [[ "$(basename "$bin_dir")" == "bin" ]]; then
+    echo "$(dirname "$bin_dir")"
+  else
+    echo "$bin_dir"
+  fi
+}
+
+INSTALL_DIR="$(resolve_install_dir)"
+VERSION_FILE="$INSTALL_DIR/VERSION"
+VERSION="${CLAUDE_CODE_STARTER_VERSION:-$(cat "$VERSION_FILE" 2>/dev/null || echo "dev")}"
+
+# Colors (only if terminal supports it)
+if [ -t 1 ]; then
+  RED='\033[0;31m'
+  GREEN='\033[0;32m'
+  YELLOW='\033[0;33m'
+  BLUE='\033[0;34m'
+  NC='\033[0m'
+else
+  RED='' GREEN='' YELLOW='' BLUE='' NC=''
+fi
+
+print_help() {
+  cat << 'EOF'
+claude-code-starter - Production-ready Claude Code configuration
+
+Usage:
+  claude-code-starter <command> [options]
+
+Commands:
+  init              Run interactive setup in current directory
+  adopt [component] Add components to existing project
+                    Components: skills, agents, hooks, rules, security,
+                                precommit, stack, skill <name>
+  update            Update to the latest version
+  version           Show version information
+  help              Show this help message
+
+Examples:
+  claude-code-starter init                    # Full interactive setup
+  claude-code-starter adopt skills            # Add just skills
+  claude-code-starter adopt precommit         # Add pre-commit hook
+  claude-code-starter adopt skill review-mr   # Add single skill
+
+Documentation:
+  https://github.com/zbruhnke/claude-code-starter
+EOF
+}
+
+print_version() {
+  echo "claude-code-starter $VERSION"
+  echo "Install location: $INSTALL_DIR"
+}
+
+cmd_init() {
+  if [ ! -f "$INSTALL_DIR/setup.sh" ]; then
+    echo -e "${RED}Error: setup.sh not found in $INSTALL_DIR${NC}" >&2
+    exit 1
+  fi
+  exec "$INSTALL_DIR/setup.sh" "$@"
+}
+
+cmd_adopt() {
+  if [ ! -f "$INSTALL_DIR/adopt.sh" ]; then
+    echo -e "${RED}Error: adopt.sh not found in $INSTALL_DIR${NC}" >&2
+    exit 1
+  fi
+  exec "$INSTALL_DIR/adopt.sh" "$@"
+}
+
+cmd_update() {
+  echo -e "${BLUE}Checking for updates...${NC}"
+
+  # Get latest release tag from GitHub API
+  local latest
+  latest=$(curl -fsSL "https://api.github.com/repos/zbruhnke/claude-code-starter/releases/latest" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
+
+  if [ -z "$latest" ]; then
+    echo -e "${RED}Error: Could not fetch latest version from GitHub${NC}" >&2
+    exit 1
+  fi
+
+  if [ "$VERSION" = "$latest" ]; then
+    echo -e "${GREEN}Already up to date ($VERSION)${NC}"
+    exit 0
+  fi
+
+  echo -e "Current version: ${YELLOW}$VERSION${NC}"
+  echo -e "Latest version:  ${GREEN}$latest${NC}"
+  echo ""
+
+  # Determine install location
+  local install_target="$HOME/.claude-code-starter"
+  if [ "$INSTALL_DIR" != "$install_target" ]; then
+    echo -e "${YELLOW}Warning: Not installed in default location ($install_target)${NC}"
+    echo "Current location: $INSTALL_DIR"
+    echo ""
+    read -p "Update anyway? [y/N] " confirm
+    if [[ ! "$confirm" =~ ^[Yy] ]]; then
+      echo "Aborted."
+      exit 0
+    fi
+    install_target="$INSTALL_DIR"
+  fi
+
+  echo -e "Downloading ${GREEN}$latest${NC}..."
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  trap "rm -rf '$tmp_dir'" EXIT
+
+  curl -fsSL "https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/${latest}.tar.gz" | tar -xz -C "$tmp_dir"
+
+  # Replace installation
+  local extracted_dir="$tmp_dir/claude-code-starter-${latest#v}"
+  if [ ! -d "$extracted_dir" ]; then
+    # Try without 'v' prefix
+    extracted_dir="$tmp_dir/claude-code-starter-${latest}"
+  fi
+
+  if [ ! -d "$extracted_dir" ]; then
+    echo -e "${RED}Error: Could not find extracted directory${NC}" >&2
+    exit 1
+  fi
+
+  # Backup and replace
+  rm -rf "$install_target.bak"
+  [ -d "$install_target" ] && mv "$install_target" "$install_target.bak"
+  mv "$extracted_dir" "$install_target"
+
+  # Write version file
+  echo "$latest" > "$install_target/VERSION"
+
+  echo -e "${GREEN}Updated to $latest${NC}"
+  echo ""
+  echo "Run 'claude-code-starter version' to verify."
+}
+
+# Main command dispatch
+case "${1:-help}" in
+  init)
+    shift
+    cmd_init "$@"
+    ;;
+  adopt)
+    shift
+    cmd_adopt "$@"
+    ;;
+  update)
+    cmd_update
+    ;;
+  version|--version|-v)
+    print_version
+    ;;
+  help|--help|-h)
+    print_help
+    ;;
+  *)
+    echo -e "${RED}Unknown command: $1${NC}" >&2
+    echo ""
+    print_help
+    exit 1
+    ;;
+esac
