@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `ccs` short alias for `claude-code-starter` command
+- Improved help output with all adopt components listed
+
+## [0.5.0] - 2026-01-12
+
+### Added
+- CLI installer (`install.sh`) for one-line installation
+- `claude-code-starter` CLI wrapper with `init`, `adopt`, `update` commands
+- `claude-code-starter update` command for easy version upgrades
+- Homebrew formula and tap (`brew tap zbruhnke/claude-code-starter`)
+- `VERSION` file for tracking installed version
+- `CLAUDE_CODE_STARTER_HOME` env var support for Homebrew installations
+
+### Changed
+- Simplified README with new Installation section
+- Streamlined Quick Start documentation
+- Collapsed alternative installation methods into expandable section
+
+## [0.4.0] - 2026-01-12
+
+### Added
+- wiggum agent/skill for autonomous implementation from specs/PRDs
+- refresh-claude skill for keeping CLAUDE.md current
+- ralph-loop and code-simplifier agents
+- quality-gates rule for code standards
+
+### Fixed
+- setup.sh compatibility with macOS and version managers
+- Pipe syntax in bash deny rules
+
+### Changed
+- Improved pre-commit review hook documentation
+
 ## [0.3.0] - 2025-01-09
 
 ### Fixed
@@ -99,7 +133,9 @@ Initial release.
 - SECURITY.md with vulnerability reporting process
 - Security model documentation in `.claude/rules/security-model.md`
 
-[Unreleased]: https://github.com/zbruhnke/claude-code-starter/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/zbruhnke/claude-code-starter/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/zbruhnke/claude-code-starter/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/zbruhnke/claude-code-starter/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/zbruhnke/claude-code-starter/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/zbruhnke/claude-code-starter/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/zbruhnke/claude-code-starter/compare/v0.1.2...v0.2.0

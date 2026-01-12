@@ -132,6 +132,9 @@ chmod +x "$INSTALL_DIR/setup.sh"
 chmod +x "$INSTALL_DIR/adopt.sh"
 chmod +x "$INSTALL_DIR/.claude/hooks/"*.sh 2>/dev/null || true
 
+# Create short alias symlink
+ln -sf "$INSTALL_DIR/bin/claude-code-starter" "$INSTALL_DIR/bin/ccs"
+
 success "Installed to $INSTALL_DIR"
 
 # Add to PATH
@@ -189,8 +192,11 @@ if [ "$PATH_ADDED" = true ]; then
 fi
 
 echo -e "  ${DIM}Get started:${NC}"
-echo "    claude-code-starter help"
-echo "    claude-code-starter init"
+echo "    ccs help"
+echo "    ccs init"
+echo ""
+echo -e "  ${DIM}Full command also available:${NC}"
+echo "    claude-code-starter"
 echo ""
 echo -e "  ${DIM}Documentation:${NC}"
 echo "    https://github.com/${REPO}"

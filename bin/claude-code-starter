@@ -54,25 +54,37 @@ fi
 
 print_help() {
   cat << 'EOF'
-claude-code-starter - Production-ready Claude Code configuration
+claude-code-starter (ccs) - Production-ready Claude Code configuration
 
 Usage:
-  claude-code-starter <command> [options]
+  ccs <command> [options]
 
 Commands:
-  init              Run interactive setup in current directory
-  adopt [component] Add components to existing project
-                    Components: skills, agents, hooks, rules, security,
-                                precommit, stack, skill <name>
-  update            Update to the latest version
-  version           Show version information
-  help              Show this help message
+  init                  Run interactive setup in current directory
+  adopt <component>     Add components to existing project
+  update                Update to the latest version
+  version, -v           Show version information
+  help, -h, --help      Show this help message
+
+Adopt Components:
+  (no argument)         Interactive mode - choose what to install
+  all                   Install core components (skills, agents, hooks, rules, security)
+                        Does NOT include: stack preset, precommit hook
+  skills                All custom skills (/review, /test, etc.)
+  agents                All specialized agents (researcher, reviewer, etc.)
+  hooks                 Security and automation hooks
+  rules                 Code style and security rules
+  security              Security config only (settings.json deny rules)
+  precommit             Pre-commit review hook (requires git repo)
+  stack                 Stack-specific preset (typescript, python, etc.)
+  skill <name>          Single skill (e.g., skill review-mr)
 
 Examples:
-  claude-code-starter init                    # Full interactive setup
-  claude-code-starter adopt skills            # Add just skills
-  claude-code-starter adopt precommit         # Add pre-commit hook
-  claude-code-starter adopt skill review-mr   # Add single skill
+  ccs init                      # Full interactive setup
+  ccs adopt                     # Interactive component selection
+  ccs adopt all                 # Install everything
+  ccs adopt skills              # Add just skills
+  ccs adopt precommit           # Add pre-commit hook
 
 Documentation:
   https://github.com/zbruhnke/claude-code-starter

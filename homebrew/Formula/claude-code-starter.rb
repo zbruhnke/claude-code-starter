@@ -25,13 +25,16 @@ class ClaudeCodeStarter < Formula
       export CLAUDE_CODE_STARTER_HOME="#{libexec}"
       exec "#{libexec}/bin/claude-code-starter" "$@"
     EOS
+
+    # Create short alias
+    bin.install_symlink "claude-code-starter" => "ccs"
   end
 
   def caveats
     <<~EOS
       To get started:
-        claude-code-starter help
-        claude-code-starter init
+        ccs help          # or: claude-code-starter help
+        ccs init          # or: claude-code-starter init
 
       Documentation:
         https://github.com/zbruhnke/claude-code-starter

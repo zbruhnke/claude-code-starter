@@ -77,11 +77,11 @@ brew upgrade claude-code-starter
 curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/main/install.sh | bash
 ```
 
-This installs to `~/.claude-code-starter` and adds `claude-code-starter` to your PATH.
+This installs `ccs` (short alias) and `claude-code-starter` (full name) to your PATH.
 
 **Update:**
 ```bash
-claude-code-starter update
+ccs update
 ```
 
 **Pin to a specific version:**
@@ -103,7 +103,7 @@ source ~/.zshrc  # or restart your terminal
 # 2. Create your project and configure it
 mkdir my-app && cd my-app
 git init
-claude-code-starter init    # Pick TypeScript, accept defaults
+ccs init    # Pick TypeScript, accept defaults
 
 # 3. Create something to work with
 mkdir -p src && echo "export const hello = () => 'world';" > src/utils.ts
@@ -136,35 +136,41 @@ That's the core loop: **edit → auto-format → review → commit with understa
 ```bash
 mkdir my-project && cd my-project
 git init
-claude-code-starter init
+ccs init
 ```
 
 ### Existing Project
 
 ```bash
 cd your-existing-project
-claude-code-starter init
+ccs init
 ```
 
-### Add Specific Components
+### Add Components
 
 ```bash
-claude-code-starter adopt skills       # Just skills
-claude-code-starter adopt agents       # Just agents
-claude-code-starter adopt precommit    # Pre-commit review hook
-claude-code-starter adopt security     # Security config only
-claude-code-starter adopt stack        # Stack-specific preset
+ccs adopt              # Interactive mode - choose what to install
+ccs adopt all          # Install core: skills, agents, hooks, rules, security
+ccs adopt skills       # Just skills
+ccs adopt agents       # Just agents
+ccs adopt precommit    # Pre-commit review hook
+ccs adopt security     # Security config only
+ccs adopt stack        # Stack-specific preset
 ```
+
+> **Note:** `adopt all` installs core components but NOT stack presets or precommit hook (since those are project-specific choices). Use interactive mode or add them explicitly.
 
 ### CLI Reference
 
 ```bash
-claude-code-starter help              # Show all commands
-claude-code-starter init              # Interactive setup
-claude-code-starter adopt [component] # Add components
-claude-code-starter update            # Update to latest version
-claude-code-starter version           # Show version
+ccs help              # Show all commands
+ccs init              # Interactive setup
+ccs adopt [component] # Add components
+ccs update            # Update to latest version
+ccs version           # Show version
 ```
+
+> **Note:** `claude-code-starter` also works as the full command name.
 
 The setup script will:
 1. Ask which stack you're using (TypeScript, Python, Go, Rust, Ruby, Elixir)
