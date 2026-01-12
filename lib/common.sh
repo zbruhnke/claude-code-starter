@@ -12,7 +12,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Disable colors if not a terminal or if NO_COLOR is set
-if [ -t 1 ] && [ -z "$NO_COLOR" ]; then
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   RED='\033[0;31m'
   GREEN='\033[0;32m'
   BLUE='\033[0;34m'

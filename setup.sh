@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Claude Code Starter Setup Script
 # Production-ready configuration with stack-specific presets
@@ -136,23 +136,24 @@ detect_versions() {
   DETECTED_ELIXIR_VERSION=$(read_tool_version "elixir")
 
   # Also try to detect from runtime commands as fallback
-  if [ -z "$DETECTED_NODE_VERSION" ] && command -v node &> /dev/null; then
-    DETECTED_NODE_VERSION=$(node --version 2>/dev/null | sed 's/^v//')
+  # Note: Use || true to handle version managers (asdf/mise) that return non-zero when no version is set
+  if [ -z "${DETECTED_NODE_VERSION:-}" ] && command -v node &> /dev/null; then
+    DETECTED_NODE_VERSION=$(node --version 2>/dev/null | sed 's/^v//' || true)
   fi
-  if [ -z "$DETECTED_PYTHON_VERSION" ] && command -v python3 &> /dev/null; then
-    DETECTED_PYTHON_VERSION=$(python3 --version 2>/dev/null | awk '{print $2}')
+  if [ -z "${DETECTED_PYTHON_VERSION:-}" ] && command -v python3 &> /dev/null; then
+    DETECTED_PYTHON_VERSION=$(python3 --version 2>/dev/null | awk '{print $2}' || true)
   fi
-  if [ -z "$DETECTED_GO_VERSION" ] && command -v go &> /dev/null; then
-    DETECTED_GO_VERSION=$(go version 2>/dev/null | awk '{print $3}' | sed 's/^go//')
+  if [ -z "${DETECTED_GO_VERSION:-}" ] && command -v go &> /dev/null; then
+    DETECTED_GO_VERSION=$(go version 2>/dev/null | awk '{print $3}' | sed 's/^go//' || true)
   fi
-  if [ -z "$DETECTED_RUST_VERSION" ] && command -v rustc &> /dev/null; then
-    DETECTED_RUST_VERSION=$(rustc --version 2>/dev/null | awk '{print $2}')
+  if [ -z "${DETECTED_RUST_VERSION:-}" ] && command -v rustc &> /dev/null; then
+    DETECTED_RUST_VERSION=$(rustc --version 2>/dev/null | awk '{print $2}' || true)
   fi
-  if [ -z "$DETECTED_RUBY_VERSION" ] && command -v ruby &> /dev/null; then
-    DETECTED_RUBY_VERSION=$(ruby --version 2>/dev/null | awk '{print $2}')
+  if [ -z "${DETECTED_RUBY_VERSION:-}" ] && command -v ruby &> /dev/null; then
+    DETECTED_RUBY_VERSION=$(ruby --version 2>/dev/null | awk '{print $2}' || true)
   fi
-  if [ -z "$DETECTED_ELIXIR_VERSION" ] && command -v elixir &> /dev/null; then
-    DETECTED_ELIXIR_VERSION=$(elixir --version 2>/dev/null | grep "Elixir" | awk '{print $2}')
+  if [ -z "${DETECTED_ELIXIR_VERSION:-}" ] && command -v elixir &> /dev/null; then
+    DETECTED_ELIXIR_VERSION=$(elixir --version 2>/dev/null | grep "Elixir" | awk '{print $2}' || true)
   fi
 }
 
