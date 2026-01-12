@@ -18,10 +18,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Smoke gate for runtime verification
   - Observability gate (structured logging, error taxonomy)
   - Migration & compatibility gate
+- **Wiggum mechanical proof requirement** - completion report must show command output, not just "agent approved"
+- **Wiggum stop conditions** - prevents runaway loops:
+  - 3 failed attempts on same gate → stop and ask user
+  - 5 iterations per chunk → re-plan
+  - 20 total iterations → full stop
+- **Wiggum command discovery** - parses CLAUDE.md for commands, stops if missing
+- **Wiggum dependency gate as hard blocker** - must get user approval before adding packages
 
 ### Changed
 - Consolidated wiggum agent into wiggum skill (removed redundant agent file)
 - Wiggum skill now includes Core Philosophy, Input Handling, and Recovery from Failures sections
+- Wiggum progress/completion reports now require Command Gates table with actual command output
+- Agent review is now supplementary to mechanical gates, not a replacement
 
 ## [0.8.0] - 2026-01-12
 

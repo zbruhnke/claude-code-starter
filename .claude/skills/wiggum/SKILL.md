@@ -76,20 +76,83 @@ Before writing any code, enter plan mode:
 └────────────────────────────────────────────────────────────────┘
 ```
 
-## Phase 0: Plan First
+## Stop Conditions (Prevent Runaway)
+
+**These limits prevent infinite loops and wasted effort:**
+
+| Condition | Limit | Action |
+|-----------|-------|--------|
+| Failed attempts on same gate | 3 | STOP. Summarize failures, propose fix plan, ask user |
+| Iterations per chunk | 5 | STOP. Re-plan the chunk, it's too big or unclear |
+| Total loop iterations | 20 | STOP. Something is fundamentally wrong. Review with user |
+
+**When you hit a stop condition:**
+```markdown
+## Loop Stopped - [Reason]
+
+### What Failed
+[Gate/check that kept failing]
+
+### Attempts Made
+1. [What you tried]
+2. [What you tried]
+3. [What you tried]
+
+### Likely Root Causes
+- [Cause 1]
+- [Cause 2]
+
+### Proposed Fix Plan
+[How to resolve this]
+
+**Waiting for user guidance before continuing.**
+```
+
+## Phase 0: Plan First (Command Discovery)
 
 **This is mandatory.** Before writing any code:
 
 1. **Enter plan mode** using the EnterPlanMode tool
 2. **Explore the codebase** to understand existing patterns
-3. **Parse CLAUDE.md Commands section** - identify TEST, LINT, TYPECHECK, BUILD commands
-4. **If commands not defined**, ask user to specify them
+3. **Parse CLAUDE.md for commands** - look for TEST, LINT, TYPECHECK, BUILD, FORMAT
+4. **STOP if commands missing** - you cannot proceed without knowing how to verify
 5. **Identify likely dependencies** - flag any new packages for review
 6. **Discuss smoke testing** - needed for runtime behavior changes?
 7. **Design the approach** based on the spec
 8. **Keep chunks small** - target 200-300 LOC per chunk, 5 files max
 9. **Present the plan** to the user via ExitPlanMode
 10. **Wait for approval** before proceeding
+
+### Command Discovery (Required)
+
+Parse CLAUDE.md and extract commands. If ANY are missing, ask once:
+
+```markdown
+## Commands Discovered
+
+| Gate | Command | Status |
+|------|---------|--------|
+| TEST | `npm test` | ✓ Found |
+| LINT | `npm run lint` | ✓ Found |
+| TYPECHECK | `tsc --noEmit` | ✓ Found |
+| BUILD | `npm run build` | ✓ Found |
+| FORMAT | `prettier --write` | ✓ Found |
+
+Ready to proceed.
+```
+
+If commands are missing:
+```
+I found these commands in CLAUDE.md:
+- TEST: npm test
+- LINT: (not found)
+- BUILD: (not found)
+
+I cannot proceed without knowing how to verify the code.
+Please provide the missing commands, or confirm N/A if not applicable.
+```
+
+**Never skip this. Never guess commands.**
 
 ```markdown
 ## Wiggum Loop - Planning
@@ -173,11 +236,28 @@ WHILE chunk not complete:
        - Use Task tool → researcher agent
        - "Help me find how to [specific problem]"
 
-    4. IF ADDING DEPENDENCY:
-       - Complete dependency checklist:
-         □ Why needed? □ License OK? □ Maintained?
-         □ Security posture? □ Version pinned?
-       - Get user approval if concerns
+    4. IF ADDING DEPENDENCY → HARD STOP:
+       - You MUST complete the dependency gate before proceeding
+       - Present to user for approval
+       - Do NOT continue until approved or alternative found
+
+       ```markdown
+       ## Dependency Gate: [package-name]
+
+       | Check | Status | Notes |
+       |-------|--------|-------|
+       | Why needed? | [answer] | [what problem it solves] |
+       | Alternatives? | [answer] | [why not X, Y, Z] |
+       | License | [MIT/Apache/etc] | [compatible: yes/no] |
+       | Maintained? | [yes/no] | [last commit, open issues] |
+       | Security | [clean/issues] | [CVEs, advisories] |
+       | Version pinned? | [yes/no] | [exact or range] |
+       | Blast radius | [runtime/build/dev] | [who is affected] |
+
+       **Recommendation**: [APPROVE / REJECT / NEEDS DISCUSSION]
+       ```
+
+       If any check fails → find alternative or get explicit user approval
 
     5. IF SIGNIFICANT DECISION:
        - Use Task tool → adr-writer agent
@@ -316,11 +396,18 @@ Before declaring complete, run ALL quality gates one final time:
 - [ ] NO placeholder implementations
 - [ ] Every code path traced and verified
 
-### Command Gates (ALL must pass)
-- [ ] TEST: All tests passing
-- [ ] LINT: No lint errors
-- [ ] TYPECHECK: No type errors (if applicable)
-- [ ] BUILD: Build succeeds
+### Command Gates (ALL must pass with proof)
+Run each command and record the output:
+
+| Gate | Command | Result | Output |
+|------|---------|--------|--------|
+| TEST | `[from CLAUDE.md]` | ✅/❌ | [actual output] |
+| LINT | `[from CLAUDE.md]` | ✅/❌ | [actual output] |
+| TYPECHECK | `[from CLAUDE.md]` | ✅/❌ or N/A | [actual output] |
+| BUILD | `[from CLAUDE.md]` | ✅/❌ | [actual output] |
+| FORMAT | `[from CLAUDE.md]` | ✅/❌ or N/A | [actual output] |
+
+**Any ❌ = not done. Fix and re-run.**
 
 ### Dependency Hygiene
 - [ ] All new dependencies have completed checklist
@@ -370,11 +457,17 @@ Before declaring complete, run ALL quality gates one final time:
 - [ ] Significant decisions documented
 - [ ] Context and consequences explained
 
-### Final Agent Approval
-- [ ] test-writer: "Tests are comprehensive" ✓
-- [ ] code-reviewer: "No remaining issues? Security checklist?" ✓
-- [ ] code-simplifier: "Code is clear" ✓
-- [ ] documentation-writer: "Docs are complete" ✓
+### Agent Review (Supplementary - after gates pass)
+Agents provide qualitative review AFTER mechanical gates pass:
+
+| Agent | Question | Answer |
+|-------|----------|--------|
+| test-writer | Edge cases covered? | [yes/no + details] |
+| code-reviewer | Security checklist complete? | [yes/no + details] |
+| code-simplifier | Unnecessary complexity? | [yes/no + details] |
+
+**Agent review cannot substitute for mechanical gates.**
+**If gates fail, fix them first. Then get agent review.**
 ```
 
 ## Anti-Patterns (NEVER DO THESE)
@@ -417,11 +510,21 @@ Before declaring complete, run ALL quality gates one final time:
 ❌ NEVER make giant commits
    One commit with everything  ← NOT ALLOWED
    "WIP" commits  ← NOT ALLOWED
+
+❌ NEVER claim completion without mechanical proof
+   "agent approved" without running commands  ← NOT ALLOWED
+   Missing Command Gates table  ← NOT ALLOWED
+   Skipping BUILD because "it probably works"  ← NOT ALLOWED
+
+❌ NEVER ignore stop conditions
+   Iteration 6 on same chunk  ← STOP AND ASK
+   Test failing 4th time  ← STOP AND ASK
+   "Just one more try"  ← NO, STOP AND ASK
 ```
 
 ## Progress Reporting
 
-After each iteration, report:
+After each iteration, report with **mechanical proof**:
 
 ```markdown
 ## Wiggum Loop - Iteration N
@@ -432,29 +535,41 @@ After each iteration, report:
 ### In Progress
 - [ ] Current work
 
+### Command Gate Results (Mechanical Proof)
+
+| Gate | Command | Result | Output |
+|------|---------|--------|--------|
+| TEST | `npm test` | ✅ PASS | 47 passed, 0 failed |
+| LINT | `npm run lint` | ✅ PASS | No errors |
+| TYPECHECK | `tsc --noEmit` | ✅ PASS | No errors |
+| FORMAT | `prettier --check .` | ✅ PASS | All files formatted |
+
+### Agent Review Status
+
+| Agent | Status | Blockers | Warnings |
+|-------|--------|----------|----------|
+| test-writer | Done | 0 | 0 |
+| code-reviewer | Done | 0 | 2 addressed |
+| code-simplifier | Done | 0 | 0 |
+
 ### Commits Made
 - `abc123` - feat(auth): add login
 - `def456` - test(auth): add login tests
 
-### ADRs Created
-- ADR-001: Use JWT for authentication
-
-### Blocked
-- Issue and what's needed
-
-### Quality Gate Status
-- Tests: PASS/FAIL
-- Review: PASS/FAIL (N blockers)
-- Simplify: PASS/FAIL
-- Docs: PASS/FAIL
+### Iteration Stats
+- Attempt: 2 of 5 max
+- Gates passed: 4/4
+- Blockers remaining: 0
 
 ### Next
 - What happens next
 ```
 
+**The Command Gate Results table is mandatory. No table = not done.**
+
 ## Completion Report
 
-When truly done:
+When truly done, you MUST show mechanical proof:
 
 ```markdown
 ## Wiggum Loop - COMPLETE ✓
@@ -464,6 +579,18 @@ When truly done:
 |-------------|--------|----------------|
 | Req 1 | ✓ | file.ts:10-50 |
 | Req 2 | ✓ | file.ts:52-80 |
+
+### Command Gates - Final Run (REQUIRED)
+
+| Gate | Command | Result | Output |
+|------|---------|--------|--------|
+| TEST | `npm test` | ✅ PASS | 47 passed, 0 failed |
+| LINT | `npm run lint` | ✅ PASS | No errors |
+| TYPECHECK | `tsc --noEmit` | ✅ PASS | No errors |
+| BUILD | `npm run build` | ✅ PASS | Build completed |
+| FORMAT | `prettier --check .` | ✅ PASS | All formatted |
+
+**All gates must show ✅ PASS. Any ❌ FAIL = not complete.**
 
 ### Files Created/Modified
 - `path/file.ts` - Description
@@ -476,8 +603,15 @@ When truly done:
 
 ### Test Summary
 - X tests written
-- All passing
+- All passing (verified by TEST gate above)
 - Coverage: X%
+
+### Dependencies Added
+| Package | Approved | License | Pinned |
+|---------|----------|---------|--------|
+| bcrypt | ✓ User approved | MIT | ^5.1.0 |
+
+(Or "None" if no new dependencies)
 
 ### Documentation Updates
 - Updated README with auth section
@@ -485,23 +619,30 @@ When truly done:
 - Documented configuration options
 
 ### Changelog Entries
-### Added
-- User authentication system
+- User authentication system (Added)
 
 ### ADRs Created
 - ADR-001: Use JWT over sessions
 
-### Quality Gates
-- test-writer: APPROVED ✓
-- code-reviewer: APPROVED ✓
-- code-simplifier: APPROVED ✓
-- documentation-writer: APPROVED ✓
+### Agent Review Summary
+| Agent | Blockers Fixed | Warnings Addressed |
+|-------|----------------|-------------------|
+| test-writer | 0 | 0 |
+| code-reviewer | 2 | 3 |
+| code-simplifier | 0 | 1 |
+
+### Loop Statistics
+- Total iterations: 8
+- Chunks completed: 3
+- Stop conditions hit: 0
 
 ### Notes
 - Decisions made
 - Tradeoffs accepted
 - Future considerations
 ```
+
+**You cannot write "COMPLETE" without the Command Gates table showing all ✅ PASS.**
 
 ## Recovery from Failures
 
