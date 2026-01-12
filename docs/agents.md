@@ -51,10 +51,11 @@ Use the test-writer agent to generate tests for the UserService class
 | Agent | Purpose | Tools | Model |
 |-------|---------|-------|-------|
 | `researcher` | Read-only exploration | Read, Grep, Glob, WebSearch, WebFetch | sonnet |
-| `code-reviewer` | Thorough code review | Read, Grep, Glob (read-only) | opus |
+| `code-reviewer` | Thorough code review with security checklist | Read, Grep, Glob (read-only) | opus |
 | `code-simplifier` | Simplify code for clarity | Read, Grep, Glob, Edit, Write, Bash | opus |
 | `test-writer` | Generate comprehensive tests | Read, Grep, Glob, Edit, Write, Bash | opus |
-| `wiggum` | Autonomous implementation from spec/PRD | Read, Grep, Glob, Edit, Write, Bash, Task | opus |
+| `documentation-writer` | Generate and update documentation | Read, Grep, Glob, Edit, Write | opus |
+| `adr-writer` | Create Architecture Decision Records | Read, Grep, Glob, Write | opus |
 
 ## Creating Your Own Agent
 

@@ -47,6 +47,8 @@ Focus on **recently modified code** unless explicitly asked to review a broader 
 - Sensitive data exposure in logs, errors, or responses?
 - Secrets hardcoded or properly managed?
 
+**Run the Security Checklist** (see section below) for any code touching auth, data, or external input.
+
 ### 3. Performance
 - Obvious inefficiencies (N+1 queries, unnecessary loops)?
 - Memory leaks or unbounded growth?
@@ -98,3 +100,54 @@ Always include:
 ## Tone
 
 Be thorough but constructive. The goal is better code, not criticism. Assume good intent. When suggesting changes, explain the "why" - help the author learn, not just fix.
+
+## Security Checklist
+
+For code touching authentication, authorization, user data, or external input, run through this checklist deliberately:
+
+### Authorization Boundaries
+- [ ] Are authz checks at the right layer (not just UI)?
+- [ ] Can a user access/modify resources they don't own?
+- [ ] Are admin/elevated actions properly gated?
+- [ ] Is there privilege escalation via parameter manipulation?
+
+### Injection Surfaces
+- [ ] **SQL**: Parameterized queries, not string concatenation?
+- [ ] **Command**: Shell commands avoid user input, or properly escaped?
+- [ ] **XSS**: User content escaped/sanitized before rendering?
+- [ ] **Path traversal**: File paths validated, no `../` exploitation?
+- [ ] **SSRF**: URLs validated, internal endpoints not reachable?
+- [ ] **Deserialization**: Untrusted data not deserialized unsafely?
+
+### Secrets Handling
+- [ ] No hardcoded secrets, keys, or tokens?
+- [ ] Secrets loaded from env vars or secret manager?
+- [ ] Secrets not logged, not in error messages?
+- [ ] API keys have minimal required permissions?
+
+### Logging & Error Handling
+- [ ] PII/sensitive data redacted from logs?
+- [ ] Stack traces not exposed to users?
+- [ ] Error messages don't leak internal details?
+- [ ] Auth failures logged for monitoring?
+
+### Data Protection
+- [ ] Sensitive data encrypted at rest/in transit?
+- [ ] Passwords hashed with appropriate algorithm (bcrypt, argon2)?
+- [ ] Session tokens unpredictable and properly invalidated?
+- [ ] Rate limiting on sensitive endpoints (login, password reset)?
+
+### Output Format for Security Findings
+
+Use `SECURITY` marker for security-specific findings:
+
+- **SECURITY/BLOCKER** `[file:line]`: Exploitable vulnerability. Must fix.
+- **SECURITY/WARNING** `[file:line]`: Potential risk, needs hardening.
+- **SECURITY/NOTE** `[file:line]`: Security-relevant observation, verify intent.
+
+Example:
+```
+SECURITY/BLOCKER [src/api/users.ts:45]: SQL injection via string interpolation
+  `db.query(\`SELECT * FROM users WHERE id = ${userId}\`)`
+  → Use parameterized query: `db.query('SELECT * FROM users WHERE id = $1', [userId])`
+```

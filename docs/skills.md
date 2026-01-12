@@ -77,8 +77,11 @@ Skills are invoked via semantic matching - describe what you want, and Claude ap
 | `refactor-code` | Improve code without changing behavior | opus |
 | `review-mr` | Review merge/pull requests | opus |
 | `install-precommit` | Install the pre-commit review hook | haiku |
-| `wiggum` | Autonomous implementation loop from spec/PRD | opus |
+| `wiggum` | Autonomous implementation loop from spec/PRD with quality gates | opus |
 | `refresh-claude` | Update CLAUDE.md with recent changes | opus |
+| `changelog-writer` | Maintain CHANGELOG.md with categorized entries | opus |
+| `release-checklist` | Final quality gate before shipping code | opus |
+| `risk-register` | Document risks for auth/data/migration changes | opus |
 
 ## Creating Your Own Skill
 

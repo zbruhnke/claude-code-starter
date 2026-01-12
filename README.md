@@ -295,15 +295,16 @@ your-project/
 │   │   ├── refresh-claude/SKILL.md
 │   │   ├── review-mr/SKILL.md
 │   │   ├── wiggum/SKILL.md
-│   │   └── changelog-writer/SKILL.md
+│   │   ├── changelog-writer/SKILL.md
+│   │   ├── release-checklist/SKILL.md
+│   │   └── risk-register/SKILL.md
 │   ├── agents/                  # Specialized subagents
 │   │   ├── researcher.md
 │   │   ├── code-reviewer.md
 │   │   ├── code-simplifier.md
 │   │   ├── test-writer.md
 │   │   ├── documentation-writer.md
-│   │   ├── adr-writer.md
-│   │   └── wiggum.md
+│   │   └── adr-writer.md
 │   └── hooks/                   # Automation scripts
 │       ├── validate-bash.sh
 │       ├── auto-format.sh
@@ -373,7 +374,7 @@ make lint         # ruff + mypy
 
 Skills are reusable instruction sets that Claude applies via semantic matching. Describe what you want, and Claude applies the relevant skill automatically.
 
-**Included skills:** `code-review`, `explain-code`, `generate-tests`, `refactor-code`, `review-mr`, `install-precommit`, `wiggum`, `refresh-claude`, `changelog-writer`
+**Included skills:** `code-review`, `explain-code`, `generate-tests`, `refactor-code`, `review-mr`, `install-precommit`, `wiggum`, `refresh-claude`, `changelog-writer`, `release-checklist`, `risk-register`
 
 **Example usage:**
 ```
@@ -390,7 +391,7 @@ Skills are reusable instruction sets that Claude applies via semantic matching. 
 
 Agents are focused AI assistants with limited tool access, useful for delegating specific tasks.
 
-**Included agents:** `researcher` (read-only exploration), `code-reviewer`, `code-simplifier`, `test-writer`, `documentation-writer`, `adr-writer`, `wiggum` (autonomous implementation)
+**Included agents:** `researcher` (read-only exploration), `code-reviewer`, `code-simplifier`, `test-writer`, `documentation-writer`, `adr-writer`
 
 **Example usage:**
 ```
