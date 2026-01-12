@@ -147,6 +147,95 @@ exit 0
 | `auto-format.sh` | PostToolUse | Run formatter after file edits |
 | `pre-commit-review.sh` | Git hook | Review changes before committing |
 
+---
+
+## Pre-Commit Review Hook (Critical for AI-Assisted Development)
+
+The `pre-commit-review.sh` hook is **the most important safety mechanism** when using AI coding assistants. It forces human review before any code enters your repository.
+
+### Why Human Review Matters
+
+When working with AI assistants like Claude Code, it's easy to fall into **"vibe coding"** - accepting generated code without truly understanding it. This is dangerous because:
+
+1. **You're responsible for your codebase**, not the AI
+2. **AI can make subtle mistakes** that look correct but aren't
+3. **Security vulnerabilities** can be introduced without obvious signs
+4. **Technical debt accumulates** when you don't understand what's being added
+5. **Debugging becomes impossible** if you don't know how code works
+
+### What the Hook Does
+
+Before every commit, the hook displays:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PRE-COMMIT REVIEW                                              │
+├─────────────────────────────────────────────────────────────────┤
+│  Files: 5   Lines: +247 / -12                                   │
+└─────────────────────────────────────────────────────────────────┘
+
+Files to be committed:
+  + src/auth.ts (new)
+  ~ src/api.ts (modified)
+  - src/old-auth.ts (deleted)
+
+⚠ SENSITIVE FILES DETECTED:
+  • config/secrets.json
+
+⚠ DEBUG STATEMENTS FOUND:
+  + console.log("debug:", user)
+
+📝 TODOs added:
+  + // TODO: implement rate limiting
+
+📦 New dependencies:
+  + "jsonwebtoken": "^9.0.0"
+```
+
+Then requires you to:
+- Press **y** to commit (you understand the changes)
+- Press **n** to abort (you need to review more)
+- Press **d** to see the full diff
+- Press **q** to quit
+
+### The Human Review Contract
+
+When you press **y**, you're affirming:
+
+1. ✓ I have read and understand these changes
+2. ✓ I know why each file was modified
+3. ✓ I've considered security implications
+4. ✓ I can explain this code to someone else
+5. ✓ I take responsibility for this code
+
+**If you can't affirm all five, press n and review more carefully.**
+
+### Installation
+
+```bash
+# Copy the hook
+cp .claude/hooks/pre-commit-review.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+
+# Or use the skill
+/install-precommit
+```
+
+### Bypassing (Use Sparingly)
+
+```bash
+# Skip review for emergency fixes only
+SKIP_PRE_COMMIT_REVIEW=1 git commit -m "Emergency hotfix"
+```
+
+**Every bypass should make you uncomfortable.** If you're bypassing regularly, you're accumulating risk.
+
+### Non-Interactive Mode
+
+In CI/CD or when Claude Code is committing, the hook passes silently. This is intentional - Claude is instructed (via CLAUDE.md) to explain changes and ask for confirmation in the conversation before committing.
+
+The hook's value is in **interactive human sessions** where it's easy to rubber-stamp changes.
+
 ## Debugging Hooks
 
 Test hooks manually:
