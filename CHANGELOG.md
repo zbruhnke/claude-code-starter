@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **release-checklist skill** for final quality gate before shipping (no TODOs, no debug code, tests passing, deps justified, security reviewed)
+- **risk-register skill** for documenting risks when changes touch auth, data, or migrations
+- **Security checklist** in code-reviewer agent covering authorization, injection, secrets, logging, and data protection
+- Wiggum production-ready gates:
+  - Command gates (test/lint/typecheck/build from CLAUDE.md)
+  - Dependency gate with validation checklist
+  - Blast-radius awareness for chunk sizing
+  - Smoke gate for runtime verification
+  - Observability gate (structured logging, error taxonomy)
+  - Migration & compatibility gate
+
+### Changed
+- Consolidated wiggum agent into wiggum skill (removed redundant agent file)
+- Wiggum skill now includes Core Philosophy, Input Handling, and Recovery from Failures sections
+
 ## [0.8.0] - 2026-01-12
 
 ### Added
