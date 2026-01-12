@@ -163,6 +163,36 @@ cp stacks/typescript/rules.md your-project/.claude/rules/
 
 > **Note**: Stack templates contain `{{PLACEHOLDER}}` variables (e.g., `{{PROJECT_NAME}}`, `{{CMD_TEST}}`). When copying manually, you'll need to replace these yourself. Running `setup.sh` handles substitution automatically.
 
+### Option 5: Download Release
+
+Download a specific release without git:
+
+```bash
+# Download and extract a release
+curl -fsSL https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/v0.4.0.tar.gz | tar -xz
+
+# Option A: Run setup in your project directory
+cd your-project
+~/claude-code-starter-0.4.0/setup.sh
+
+# Option B: Use adopt.sh to add specific components
+cd your-project
+~/claude-code-starter-0.4.0/adopt.sh skills
+~/claude-code-starter-0.4.0/adopt.sh agents
+
+# Option C: Copy files manually
+cp -r ~/claude-code-starter-0.4.0/.claude your-project/
+cp ~/claude-code-starter-0.4.0/.claudeignore your-project/
+```
+
+**Why use a release?**
+- Reproducible setup - same version every time
+- No git required on the target machine
+- CI/CD pipelines that need a specific version
+- Air-gapped environments (download once, use offline)
+
+See [Releases](https://github.com/zbruhnke/claude-code-starter/releases) for all versions.
+
 ---
 
 ## Documentation
@@ -194,8 +224,11 @@ cp stacks/typescript/rules.md your-project/.claude/rules/
 
 **For reproducible installs**, pin to a release tag:
 ```bash
-# Use a specific version instead of main
-curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/v0.1.0/setup.sh -o setup.sh
+# Download just setup.sh from a specific version
+curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/v0.4.0/setup.sh -o setup.sh
+
+# Or download the full release archive (see Option 5 in Quick Start)
+curl -fsSL https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/v0.4.0.tar.gz | tar -xz
 ```
 
 **Verify downloads** with SHA256 checksums (included in each release's notes):
