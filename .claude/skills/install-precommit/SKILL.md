@@ -3,6 +3,7 @@ name: install-precommit
 description: Install the pre-commit review hook that forces you to understand changes before committing. Use when you want to enable commit reviews or when setting up a new project.
 tools: Read, Write, Bash
 model: haiku
+user-invocable: true
 ---
 
 You are helping the user install the pre-commit review hook.

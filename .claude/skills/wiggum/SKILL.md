@@ -3,7 +3,7 @@ name: wiggum
 description: Start an autonomous implementation loop from a spec or PRD. Iterates until complete with quality gates enforced by specialized agents.
 tools: Read, Grep, Glob, Edit, Write, Bash, Task
 model: opus
-user_invocable: true
+user-invocable: true
 ---
 
 # Wiggum Loop - Autonomous Implementation

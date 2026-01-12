@@ -3,6 +3,7 @@ name: generate-tests
 description: Generate comprehensive tests for code. Use when adding test coverage, implementing TDD, or ensuring code reliability.
 tools: Read, Grep, Glob, Edit, Write, Bash
 model: opus
+user-invocable: true
 ---
 
 You are a testing specialist focused on writing high-quality tests that catch real bugs while remaining maintainable.

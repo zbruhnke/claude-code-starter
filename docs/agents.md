@@ -52,7 +52,9 @@ Use the test-writer agent to generate tests for the UserService class
 |-------|---------|-------|-------|
 | `researcher` | Read-only exploration | Read, Grep, Glob, WebSearch, WebFetch | sonnet |
 | `code-reviewer` | Thorough code review | Read, Grep, Glob (read-only) | opus |
+| `code-simplifier` | Simplify code for clarity | Read, Grep, Glob, Edit, Write, Bash | opus |
 | `test-writer` | Generate comprehensive tests | Read, Grep, Glob, Edit, Write, Bash | opus |
+| `wiggum` | Autonomous implementation from spec/PRD | Read, Grep, Glob, Edit, Write, Bash, Task | opus |
 
 ## Creating Your Own Agent
 

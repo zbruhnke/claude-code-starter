@@ -41,6 +41,7 @@ Skills are invoked automatically when your request matches their description:
 - **review-mr**: Review merge/pull requests
 - **install-precommit**: Install the pre-commit review hook
 - **wiggum**: Start autonomous implementation loop from spec/PRD (`/wiggum`)
+- **refresh-claude**: Update CLAUDE.md with recent changes (`/refresh-claude`)
 
 ## Available Agents
 
@@ -77,6 +78,7 @@ Or use agent directly: "Use the wiggum agent to implement this feature spec: [pa
 │   ├── refactor-code/SKILL.md
 │   ├── review-mr/SKILL.md
 │   ├── install-precommit/SKILL.md
+│   ├── refresh-claude/SKILL.md
 │   └── wiggum/SKILL.md
 ├── agents/                    # Specialized subagents
 │   ├── researcher.md

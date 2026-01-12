@@ -228,6 +228,7 @@ your-project/
 │   ├── rules/                   # Reference documentation (NOT auto-loaded)
 │   │   ├── code-style.md
 │   │   ├── git.md
+│   │   ├── quality-gates.md
 │   │   ├── security.md
 │   │   ├── security-model.md
 │   │   └── testing.md
@@ -237,11 +238,15 @@ your-project/
 │   │   ├── generate-tests/SKILL.md
 │   │   ├── install-precommit/SKILL.md
 │   │   ├── refactor-code/SKILL.md
-│   │   └── review-mr/SKILL.md
+│   │   ├── refresh-claude/SKILL.md
+│   │   ├── review-mr/SKILL.md
+│   │   └── wiggum/SKILL.md
 │   ├── agents/                  # Specialized subagents
 │   │   ├── researcher.md
 │   │   ├── code-reviewer.md
-│   │   └── test-writer.md
+│   │   ├── code-simplifier.md
+│   │   ├── test-writer.md
+│   │   └── wiggum.md
 │   └── hooks/                   # Automation scripts
 │       ├── validate-bash.sh
 │       ├── auto-format.sh
@@ -311,7 +316,7 @@ make lint         # ruff + mypy
 
 Skills are reusable instruction sets that Claude applies via semantic matching. Describe what you want, and Claude applies the relevant skill automatically.
 
-**Included skills:** `code-review`, `explain-code`, `generate-tests`, `refactor-code`, `review-mr`, `install-precommit`
+**Included skills:** `code-review`, `explain-code`, `generate-tests`, `refactor-code`, `review-mr`, `install-precommit`, `wiggum`, `refresh-claude`
 
 **Example usage:**
 ```
@@ -328,7 +333,7 @@ Skills are reusable instruction sets that Claude applies via semantic matching. 
 
 Agents are focused AI assistants with limited tool access, useful for delegating specific tasks.
 
-**Included agents:** `researcher` (read-only exploration), `code-reviewer`, `test-writer`
+**Included agents:** `researcher` (read-only exploration), `code-reviewer`, `code-simplifier`, `test-writer`, `wiggum` (autonomous implementation)
 
 **Example usage:**
 ```
