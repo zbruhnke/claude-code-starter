@@ -40,6 +40,7 @@ Skills are invoked automatically when your request matches their description:
 - **refactor-code**: Improve code without changing behavior
 - **review-mr**: Review merge/pull requests
 - **install-precommit**: Install the pre-commit review hook
+- **wiggum**: Start autonomous implementation loop from spec/PRD (`/wiggum`)
 
 ## Available Agents
 
@@ -48,11 +49,11 @@ Use these specialized agents for focused tasks:
 - **code-reviewer**: Thorough code reviews
 - **code-simplifier**: Simplify code for clarity and maintainability
 - **test-writer**: Generate comprehensive tests
-- **ralph-loop**: Autonomous implementation from spec/PRD with quality gates
+- **wiggum**: Autonomous implementation from spec/PRD with quality gates
 
-### Ralph Loop Agent
+### Wiggum Agent
 
-The ralph-loop agent takes a specification or PRD and autonomously implements it to completion. It coordinates with other agents to ensure quality:
+The wiggum agent (inspired by the Ralph Wiggum technique) takes a specification or PRD and autonomously implements it to completion. It coordinates with other agents to ensure quality:
 
 1. **Implements** the spec iteratively
 2. **Consults researcher** when stuck
@@ -61,7 +62,8 @@ The ralph-loop agent takes a specification or PRD and autonomously implements it
 5. **Applies code-simplifier** for clarity
 6. **Only finishes** when ALL agents approve
 
-Example: "Use the ralph-loop agent to implement this feature spec: [paste spec]"
+Invoke via skill: `/wiggum "implement feature X per this spec..."`
+Or use agent directly: "Use the wiggum agent to implement this feature spec: [paste spec]"
 
 ## Project Structure
 
@@ -74,13 +76,14 @@ Example: "Use the ralph-loop agent to implement this feature spec: [paste spec]"
 │   ├── generate-tests/SKILL.md
 │   ├── refactor-code/SKILL.md
 │   ├── review-mr/SKILL.md
-│   └── install-precommit/SKILL.md
+│   ├── install-precommit/SKILL.md
+│   └── wiggum/SKILL.md
 ├── agents/                    # Specialized subagents
 │   ├── researcher.md
 │   ├── code-reviewer.md
 │   ├── code-simplifier.md
 │   ├── test-writer.md
-│   └── ralph-loop.md
+│   └── wiggum.md
 ├── hooks/                     # Automation scripts
 │   ├── validate-bash.sh       # Pre-command validation
 │   ├── auto-format.sh         # Post-edit formatting
@@ -88,6 +91,7 @@ Example: "Use the ralph-loop agent to implement this feature spec: [paste spec]"
 └── rules/                     # Documentation (not auto-loaded)
     ├── code-style.md
     ├── git.md
+    ├── quality-gates.md
     ├── security.md
     ├── security-model.md
     └── testing.md
