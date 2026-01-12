@@ -59,14 +59,27 @@ Most developers install Claude Code and use maybe 10% of its capabilities. This 
 
 ## Installation
 
+### Homebrew (recommended)
+
 ```bash
-# Install (one-time)
+brew tap zbruhnke/claude-code-starter
+brew install claude-code-starter
+```
+
+**Update:**
+```bash
+brew upgrade claude-code-starter
+```
+
+### Shell script
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/main/install.sh | bash
 ```
 
 This installs to `~/.claude-code-starter` and adds `claude-code-starter` to your PATH.
 
-**Update anytime:**
+**Update:**
 ```bash
 claude-code-starter update
 ```

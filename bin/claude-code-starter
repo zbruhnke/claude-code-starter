@@ -13,8 +13,14 @@
 set -euo pipefail
 
 # Resolve the installation directory
-# Works whether running from source, symlink, or installed location
+# Priority: CLAUDE_CODE_STARTER_HOME env var > symlink resolution > script location
 resolve_install_dir() {
+  # If CLAUDE_CODE_STARTER_HOME is set (e.g., by Homebrew wrapper), use it
+  if [ -n "${CLAUDE_CODE_STARTER_HOME:-}" ]; then
+    echo "$CLAUDE_CODE_STARTER_HOME"
+    return
+  fi
+
   local source="${BASH_SOURCE[0]}"
   while [ -L "$source" ]; do
     local dir="$(cd -P "$(dirname "$source")" && pwd)"
