@@ -21,8 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Wiggum mechanical proof requirement** - completion report must show command output, not just "agent approved"
 - **Wiggum stop conditions** - prevents runaway loops:
   - 3 failed attempts on same gate → stop and ask user
-  - 5 iterations per chunk → re-plan
-  - 20 total iterations → full stop
+  - 5 iterations per chunk → re-plan (chunk is too big or unclear)
 - **Wiggum command discovery** - parses CLAUDE.md for commands, stops if missing
 - **Wiggum dependency gate as hard blocker** - must get user approval before adding packages
 

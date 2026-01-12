@@ -84,7 +84,8 @@ Before writing any code, enter plan mode:
 |-----------|-------|--------|
 | Failed attempts on same gate | 3 | STOP. Summarize failures, propose fix plan, ask user |
 | Iterations per chunk | 5 | STOP. Re-plan the chunk, it's too big or unclear |
-| Total loop iterations | 20 | STOP. Something is fundamentally wrong. Review with user |
+
+Complex specs with many chunks will naturally have many total iterations - that's fine. The per-chunk and per-gate limits catch actual problems.
 
 **When you hit a stop condition:**
 ```markdown
@@ -517,8 +518,8 @@ Agents provide qualitative review AFTER mechanical gates pass:
    Skipping BUILD because "it probably works"  ← NOT ALLOWED
 
 ❌ NEVER ignore stop conditions
-   Iteration 6 on same chunk  ← STOP AND ASK
-   Test failing 4th time  ← STOP AND ASK
+   Iteration 6 on same chunk  ← STOP AND RE-PLAN
+   Same gate failing 4th time  ← STOP AND ASK USER
    "Just one more try"  ← NO, STOP AND ASK
 ```
 
@@ -634,7 +635,6 @@ When truly done, you MUST show mechanical proof:
 ### Loop Statistics
 - Total iterations: 8
 - Chunks completed: 3
-- Stop conditions hit: 0
 
 ### Notes
 - Decisions made
