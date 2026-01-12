@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-01-12
+
+### Added
+- **documentation-writer agent** for generating inline docs, README updates, and API documentation
+- **adr-writer agent** for creating Architecture Decision Records (ADRs)
+- **changelog-writer skill** for maintaining CHANGELOG.md in Keep a Changelog format
+- Wiggum loop now starts in **plan mode** for user approval before implementing
+- Wiggum loop now makes **incremental git commits** after each chunk passes quality gates
+- Wiggum loop integrates with documentation-writer, adr-writer, and changelog-writer
+
+### Changed
+- Enhanced wiggum agent to coordinate 7 specialized agents (up from 4)
+- Wiggum completion criteria now includes documentation, changelog, and ADR requirements
+
 ## [0.7.1] - 2026-01-12
 
 ### Fixed
@@ -151,7 +165,8 @@ Initial release.
 - SECURITY.md with vulnerability reporting process
 - Security model documentation in `.claude/rules/security-model.md`
 
-[Unreleased]: https://github.com/zbruhnke/claude-code-starter/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/zbruhnke/claude-code-starter/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/zbruhnke/claude-code-starter/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/zbruhnke/claude-code-starter/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/zbruhnke/claude-code-starter/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/zbruhnke/claude-code-starter/compare/v0.5.0...v0.6.0
