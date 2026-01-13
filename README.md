@@ -9,7 +9,7 @@ A production-ready starter template for [Claude Code](https://docs.anthropic.com
 
 **Required:**
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated
-- Bash 4.0+ (macOS users: `brew install bash`)
+- Bash 3.2+ (macOS default works)
 - Git
 - [jq](https://jqlang.github.io/jq/) - JSON parsing in hooks (`brew install jq` / `apt install jq`)
 
@@ -19,7 +19,7 @@ A production-ready starter template for [Claude Code](https://docs.anthropic.com
 **Check your setup:**
 ```bash
 claude --version     # Should show Claude Code version
-bash --version       # Should be 4.0+
+bash --version       # Should be 3.2+ (macOS default works)
 jq --version         # Required for hooks
 ```
 
@@ -28,7 +28,7 @@ jq --version         # Required for hooks
 | Component | Requirement | Notes |
 |-----------|-------------|-------|
 | **OS** | Linux, macOS | Tested on Ubuntu 22.04+, macOS 13+ |
-| **Bash** | 4.0+ | macOS ships with 3.2; install newer via Homebrew |
+| **Bash** | 3.2+ | macOS default (3.2) works fine |
 | **jq** | Any version | Required for hooks |
 | **Claude Code** | Any version | Tested with 1.x |
 

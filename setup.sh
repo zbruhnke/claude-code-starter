@@ -3,25 +3,11 @@
 # Claude Code Starter Setup Script
 # Production-ready configuration with stack-specific presets
 #
-# Dependencies: bash 4.0+, git (optional)
+# Dependencies: bash 3.2+, git (optional)
 # Exit codes: 0=success, 1=error
 #
 
 set -euo pipefail
-
-# Check bash version (need 4.0+ for associative arrays and other features)
-if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
-  echo "Error: This script requires Bash 4.0 or later."
-  echo "Your version: $BASH_VERSION"
-  echo ""
-  echo "On macOS, install newer bash with Homebrew:"
-  echo "  brew install bash"
-  echo "  \$(brew --prefix)/bin/bash $0"
-  echo ""
-  echo "Or add to your shell config:"
-  echo "  export PATH=\"\$(brew --prefix)/bin:\$PATH\""
-  exit 1
-fi
 
 # Script location
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

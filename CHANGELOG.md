@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Remove unnecessary Bash 4.0 requirement - scripts now work with macOS default Bash 3.2
+
 ### Added
 - **release-checklist skill** for final quality gate before shipping (no TODOs, no debug code, tests passing, deps justified, security reviewed)
 - **risk-register skill** for documenting risks when changes touch auth, data, or migrations
