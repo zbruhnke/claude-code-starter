@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove unnecessary Bash 4.0 requirement - scripts now work with macOS default Bash 3.2
 
 ### Added
+- **wiggum-session-start.sh** - PreToolUse hook that AUTOMATICALLY creates `.wiggum-session` when wiggum skill is invoked
+  - Claude cannot skip this - Claude Code runs the hook mechanically before skill execution
+  - Solves the "gentleman's agreement" problem where Claude could ignore session marker instructions
 - **wiggum-precommit.sh** - Git pre-commit hook that MECHANICALLY ENFORCES quality gates:
   - Blocks commits if CHANGELOG [Unreleased] is empty (when committing code)
   - Blocks commits if tests fail

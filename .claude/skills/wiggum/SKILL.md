@@ -31,21 +31,16 @@ You MUST receive a clear specification. If not provided:
 
 ## Quick Start
 
-**Step 0: Start Wiggum Session (MANDATORY)**
+**Step 0: Enforcement Is Automatic**
 
-Before anything else, run these commands to enable enforcement:
+When `/wiggum` is invoked, a Claude Code hook **automatically** creates `.wiggum-session`:
+- This happens mechanically via `.claude/hooks/wiggum-session-start.sh`
+- Claude cannot skip this - Claude Code runs the hook before the skill executes
+- No manual step required
 
+Install the pre-commit hook (one-time setup):
 ```bash
-# Install the pre-commit hook (if not already installed)
-cp .claude/hooks/wiggum-precommit.sh .git/hooks/pre-commit 2>/dev/null || true
-chmod +x .git/hooks/pre-commit 2>/dev/null || true
-
-# Create session marker - THIS ENABLES ENFORCEMENT
-echo "$(date -Iseconds)" > .wiggum-session
-echo "Starting commit: $(git rev-parse HEAD)" >> .wiggum-session
-
-# Record starting commit for validation
-git rev-parse HEAD
+cp .claude/hooks/wiggum-precommit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 ```
 
 **The `.wiggum-session` file activates mechanical enforcement:**
@@ -55,7 +50,11 @@ git rev-parse HEAD
 - Only active during wiggum sessions (file exists)
 - Remove file at end to deactivate
 
-Save the starting commit hash for `wiggum-validate.sh --since <hash>` at the end.
+Record the starting commit for validation later:
+```bash
+git rev-parse HEAD
+```
+Save this hash for `wiggum-validate.sh --since <hash>` at the end.
 
 **Step 1: Get the Spec**
 
