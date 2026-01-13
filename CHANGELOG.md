@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove unnecessary Bash 4.0 requirement - scripts now work with macOS default Bash 3.2
 
 ### Added
+- **wiggum-precommit.sh** - Git pre-commit hook that MECHANICALLY ENFORCES quality gates:
+  - Blocks commits if CHANGELOG [Unreleased] is empty (when committing code)
+  - Blocks commits if tests fail
+  - Blocks commits if lint fails
+  - Git enforces this, not Claude - cannot be bypassed without --no-verify
+- **wiggum-validate.sh** - Enforcement script that checks reality before allowing completion:
+  - Verifies git commits were made
+  - Checks CHANGELOG.md has [Unreleased] entries
+  - Runs TEST/LINT/BUILD commands and reports results
+  - Must show "VALIDATION PASSED" before wiggum can claim complete
+- Wiggum now records starting commit hash for precise validation
+- Wiggum completion report now requires validation script output
+
+### Changed
+- Wiggum loop now has 14 steps (added VALIDATE before COMPLETE)
+- Wiggum cannot claim COMPLETE without running validation script
+- Added anti-pattern: "NEVER skip the validation script"
+
+### Previously Added
 - **release-checklist skill** for final quality gate before shipping (no TODOs, no debug code, tests passing, deps justified, security reviewed)
 - **risk-register skill** for documenting risks when changes touch auth, data, or migrations
 - **Security checklist** in code-reviewer agent covering authorization, injection, secrets, logging, and data protection

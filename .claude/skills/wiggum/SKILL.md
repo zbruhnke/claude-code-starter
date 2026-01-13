@@ -31,6 +31,32 @@ You MUST receive a clear specification. If not provided:
 
 ## Quick Start
 
+**Step 0: Start Wiggum Session (MANDATORY)**
+
+Before anything else, run these commands to enable enforcement:
+
+```bash
+# Install the pre-commit hook (if not already installed)
+cp .claude/hooks/wiggum-precommit.sh .git/hooks/pre-commit 2>/dev/null || true
+chmod +x .git/hooks/pre-commit 2>/dev/null || true
+
+# Create session marker - THIS ENABLES ENFORCEMENT
+echo "$(date -Iseconds)" > .wiggum-session
+echo "Starting commit: $(git rev-parse HEAD)" >> .wiggum-session
+
+# Record starting commit for validation
+git rev-parse HEAD
+```
+
+**The `.wiggum-session` file activates mechanical enforcement:**
+- Git will block commits if CHANGELOG is empty
+- Git will block commits if tests fail
+- Git will block commits if lint fails
+- Only active during wiggum sessions (file exists)
+- Remove file at end to deactivate
+
+Save the starting commit hash for `wiggum-validate.sh --since <hash>` at the end.
+
 **Step 1: Get the Spec**
 
 If the user provided a spec/PRD, proceed to planning. If not:
@@ -72,9 +98,37 @@ Before writing any code, enter plan mode:
 │  10. REPEAT  → Loop until ALL gates pass                       │
 │  11. CHANGELOG → Update CHANGELOG.md                           │
 │  12. VERIFY  → Final verification pass                         │
-│  13. COMPLETE → Only when truly done                           │
+│  13. VALIDATE → Run wiggum-validate.sh (MANDATORY)             │
+│  14. COMPLETE → Only when validation passes                    │
 └────────────────────────────────────────────────────────────────┘
 ```
+
+## Mandatory Validation (ENFORCED)
+
+**Before you can say "COMPLETE", you MUST run the validation script:**
+
+```bash
+.claude/scripts/wiggum-validate.sh
+```
+
+This script checks reality:
+- ✓ Git commits were actually made
+- ✓ CHANGELOG.md has [Unreleased] entries
+- ✓ TEST command passes
+- ✓ LINT command passes
+- ✓ BUILD command passes
+
+**The script output must be included in your completion report.**
+
+If the script shows `VALIDATION FAILED`:
+- You are NOT done
+- Fix the failures
+- Run the script again
+- Repeat until `VALIDATION PASSED`
+
+**You cannot claim COMPLETE without showing the validation script output.**
+
+This is not optional. This is not a suggestion. This is enforcement.
 
 ## Stop Conditions (Prevent Runaway)
 
@@ -521,6 +575,11 @@ Agents provide qualitative review AFTER mechanical gates pass:
    Iteration 6 on same chunk  ← STOP AND RE-PLAN
    Same gate failing 4th time  ← STOP AND ASK USER
    "Just one more try"  ← NO, STOP AND ASK
+
+❌ NEVER skip the validation script
+   Claiming complete without running wiggum-validate.sh  ← NOT ALLOWED
+   "The validation script isn't necessary"  ← YES IT IS, RUN IT
+   Saying COMPLETE when validation shows FAILED  ← ABSOLUTELY NOT
 ```
 
 ## Progress Reporting
@@ -570,10 +629,22 @@ After each iteration, report with **mechanical proof**:
 
 ## Completion Report
 
+**MANDATORY: Run validation script FIRST and include output.**
+
+```bash
+.claude/scripts/wiggum-validate.sh
+```
+
+Only proceed with completion report if validation shows `VALIDATION PASSED`.
+
 When truly done, you MUST show mechanical proof:
 
 ```markdown
 ## Wiggum Loop - COMPLETE ✓
+
+### Validation Script Output (REQUIRED)
+[Paste the FULL output of .claude/scripts/wiggum-validate.sh here]
+[Must show "VALIDATION PASSED" or you cannot claim complete]
 
 ### Spec Fulfillment
 | Requirement | Status | Implementation |
@@ -643,6 +714,11 @@ When truly done, you MUST show mechanical proof:
 ```
 
 **You cannot write "COMPLETE" without the Command Gates table showing all ✅ PASS.**
+
+**Final step: Remove session marker to deactivate enforcement:**
+```bash
+rm .wiggum-session
+```
 
 ## Recovery from Failures
 

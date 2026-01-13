@@ -2,6 +2,9 @@
 CLAUDE.local.md
 .claude/settings.local.json
 
+# Wiggum session marker (temporary, enables enforcement hooks)
+.wiggum-session
+
 # OS
 .DS_Store
 Thumbs.db
