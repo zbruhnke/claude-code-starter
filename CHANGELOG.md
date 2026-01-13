@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **wiggum-session-start.sh** - PreToolUse hook that AUTOMATICALLY creates `.wiggum-session` when wiggum skill is invoked
   - Claude cannot skip this - Claude Code runs the hook mechanically before skill execution
   - Solves the "gentleman's agreement" problem where Claude could ignore session marker instructions
+- **wiggum-session-end.sh** - PostToolUse hook that AUTOMATICALLY removes `.wiggum-session` when validation passes
+  - Detects successful execution of wiggum-validate.sh
+  - Cleanup is now mechanical too - no reliance on Claude remembering to delete the file
 - **wiggum-precommit.sh** - Git pre-commit hook that MECHANICALLY ENFORCES quality gates:
   - Blocks commits if CHANGELOG [Unreleased] is empty (when committing code)
   - Blocks commits if tests fail

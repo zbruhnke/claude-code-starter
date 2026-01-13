@@ -714,10 +714,7 @@ When truly done, you MUST show mechanical proof:
 
 **You cannot write "COMPLETE" without the Command Gates table showing all ✅ PASS.**
 
-**Final step: Remove session marker to deactivate enforcement:**
-```bash
-rm .wiggum-session
-```
+**Session cleanup is automatic:** When `wiggum-validate.sh` passes, a PostToolUse hook removes `.wiggum-session` automatically.
 
 ## Recovery from Failures
 
