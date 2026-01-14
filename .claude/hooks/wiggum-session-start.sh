@@ -55,7 +55,15 @@ if [ "$SKILL_NAME" = "wiggum" ]; then
         case "$term" in
           ghostty)
             if command -v ghostty &>/dev/null || [ -d "/Applications/Ghostty.app" ]; then
-              open -a Ghostty --args -e "cd '$PROJECT_DIR' && '$TUI_PATH'" >/dev/null 2>&1 &
+              # Ghostty on macOS requires: open -na Ghostty.app --args -e <command>
+              # We create a wrapper script since -e only takes a single command
+              WRAPPER="/tmp/wiggum-tui-launcher.sh"
+              cat > "$WRAPPER" << LAUNCHER
+#!/bin/bash
+cd '$PROJECT_DIR' && exec '$TUI_PATH'
+LAUNCHER
+              chmod +x "$WRAPPER"
+              open -na Ghostty.app --args -e "$WRAPPER" >/dev/null 2>&1 &
               echo "TUI dashboard launched in Ghostty" >&2
               return 0
             fi
