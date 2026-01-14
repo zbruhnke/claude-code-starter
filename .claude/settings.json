@@ -33,6 +33,18 @@
     ]
   },
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "^/wiggum",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/wiggum-session-start.sh <<< '{\"skill\": \"wiggum\"}'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
