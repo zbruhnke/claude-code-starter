@@ -17,3 +17,5 @@ Thumbs.db
 
 # Logs
 *.log
+tui/wiggum-tui
+.wiggum-status.json

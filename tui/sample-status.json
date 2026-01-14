@@ -1,0 +1,143 @@
+{
+  "session": {
+    "start_time": "2025-01-14T10:00:00Z",
+    "start_commit": "abc1234def5678",
+    "phase": "implement",
+    "iteration": 3,
+    "max_iterations": 5
+  },
+  "plan": {
+    "approved": true,
+    "summary": "Add user authentication with JWT tokens",
+    "must_have": [
+      "Login endpoint",
+      "Token validation middleware",
+      "Logout functionality"
+    ],
+    "should_have": [
+      "Password reset"
+    ],
+    "nice_to_have": [
+      "Remember me option"
+    ]
+  },
+  "current_task": {
+    "name": "Implement token validation middleware",
+    "description": "Create JWT validation for protected routes",
+    "status": "in_progress",
+    "start_time": "2025-01-14T10:15:00Z",
+    "attempt": 2,
+    "max_attempts": 3
+  },
+  "chunks": [
+    {
+      "id": 1,
+      "name": "Login endpoint",
+      "status": "completed",
+      "files": ["src/auth/login.ts", "src/auth/login.test.ts"],
+      "iteration": 2,
+      "gates_passed": true
+    },
+    {
+      "id": 2,
+      "name": "Token validation middleware",
+      "status": "in_progress",
+      "files": ["src/middleware/auth.ts"],
+      "iteration": 1,
+      "gates_passed": false
+    },
+    {
+      "id": 3,
+      "name": "Logout functionality",
+      "status": "pending",
+      "files": [],
+      "iteration": 0,
+      "gates_passed": false
+    }
+  ],
+  "gates": {
+    "test": {
+      "command": "npm test",
+      "status": "passed",
+      "output": "47 passed, 0 failed",
+      "attempts": 1
+    },
+    "lint": {
+      "command": "npm run lint",
+      "status": "passed",
+      "output": "No errors",
+      "attempts": 1
+    },
+    "typecheck": {
+      "command": "tsc --noEmit",
+      "status": "running",
+      "output": "",
+      "attempts": 1
+    },
+    "build": {
+      "command": "npm run build",
+      "status": "pending",
+      "output": "",
+      "attempts": 0
+    },
+    "format": {
+      "command": "prettier --check .",
+      "status": "skipped",
+      "output": "",
+      "attempts": 0
+    }
+  },
+  "agents": [
+    {
+      "name": "researcher",
+      "status": "done",
+      "last_output": "Found JWT validation patterns",
+      "blockers": 0,
+      "warnings": 0
+    },
+    {
+      "name": "test-writer",
+      "status": "active",
+      "last_output": "Writing tests for middleware",
+      "blockers": 0,
+      "warnings": 1
+    },
+    {
+      "name": "code-reviewer",
+      "status": "idle",
+      "last_output": "",
+      "blockers": 0,
+      "warnings": 0
+    },
+    {
+      "name": "code-simplifier",
+      "status": "idle",
+      "last_output": "",
+      "blockers": 0,
+      "warnings": 0
+    }
+  ],
+  "commits": [
+    {
+      "hash": "a1b2c3d4e5f6",
+      "message": "feat(auth): add login endpoint",
+      "time": "2025-01-14T10:10:00Z",
+      "files": 2
+    },
+    {
+      "hash": "b2c3d4e5f6a7",
+      "message": "test(auth): add login tests",
+      "time": "2025-01-14T10:12:00Z",
+      "files": 1
+    }
+  ],
+  "stats": {
+    "total_iterations": 3,
+    "chunks_completed": 1,
+    "chunks_total": 3,
+    "gates_passed": 2,
+    "gates_failed": 0,
+    "commits_made": 2,
+    "elapsed_time": 900000000000
+  }
+}
