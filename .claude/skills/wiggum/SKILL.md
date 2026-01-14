@@ -31,32 +31,34 @@ You MUST receive a clear specification. If not provided:
 
 ## Quick Start
 
-**Step 0: Enforcement Is Automatic**
+**Step 0: Initialize Session**
 
-When `/wiggum` is invoked, a Claude Code hook **automatically** creates `.wiggum-session`:
-- This happens mechanically via `.claude/hooks/wiggum-session-start.sh`
-- Claude cannot skip this - Claude Code runs the hook before the skill executes
-- No manual step required
+When `/wiggum` is invoked, a Claude Code hook **automatically** creates `.wiggum-session`.
 
-Install the pre-commit hook (one-time setup):
+**IMMEDIATELY run these commands to set up the session:**
+
 ```bash
-cp .claude/hooks/wiggum-precommit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Install pre-commit hook (one-time, if not already done)
+cp .claude/hooks/wiggum-precommit.sh .git/hooks/pre-commit 2>/dev/null; chmod +x .git/hooks/pre-commit 2>/dev/null
+
+# Initialize TUI status dashboard
+.claude/scripts/wiggum-status.sh init
 ```
 
 **The `.wiggum-session` file activates mechanical enforcement:**
 - Git will block commits if CHANGELOG is empty
 - Git will block commits if tests fail
 - Git will block commits if lint fails
-- Only active during wiggum sessions (file exists)
-- Remove file at end to deactivate
 
-Record the starting commit for validation later:
+**TUI Dashboard (Optional):**
+Run in a separate terminal to monitor progress in real-time:
 ```bash
-git rev-parse HEAD
+./tui/wiggum-tui
 ```
-Save this hash for `wiggum-validate.sh --since <hash>` at the end.
 
 **Step 1: Get the Spec**
+
+Update status: `.claude/scripts/wiggum-status.sh phase plan`
 
 If the user provided a spec/PRD, proceed to planning. If not:
 
@@ -272,10 +274,20 @@ Break down into chunks:
 
 ## Phase 3: Build (The Loop)
 
+**Update status when starting implementation:**
+```bash
+.claude/scripts/wiggum-status.sh phase implement
+```
+
 For each chunk, iterate:
 
 ```
 WHILE chunk not complete:
+
+    0. UPDATE STATUS
+       - .claude/scripts/wiggum-status.sh iteration <N>
+       - .claude/scripts/wiggum-status.sh chunk <id> "<name>" in_progress
+       - .claude/scripts/wiggum-status.sh task "<current task>" in_progress
 
     1. IMPLEMENT
        - Write the code
@@ -318,23 +330,30 @@ WHILE chunk not complete:
        - Document the decision and alternatives
 
     6. WRITE TESTS
+       - .claude/scripts/wiggum-status.sh agent test-writer active
        - Use Task tool → test-writer agent
        - "Write comprehensive tests for [code]"
+       - .claude/scripts/wiggum-status.sh agent test-writer done
 
-    7. RUN COMMAND GATES
+    7. RUN COMMAND GATES (update status for each)
+       - .claude/scripts/wiggum-status.sh gate test running
        - TEST: Run test command - must pass
-       - LINT: Run lint command - must pass
-       - TYPECHECK: Run typecheck (if applicable) - must pass
+       - .claude/scripts/wiggum-status.sh gate test passed  (or failed)
+       - (repeat for lint, typecheck, build)
 
     8. CODE REVIEW
+       - .claude/scripts/wiggum-status.sh agent code-reviewer active
        - Use Task tool → code-reviewer agent
        - "Review [code] for quality AND security checklist"
        - Fix ALL blockers before continuing
+       - .claude/scripts/wiggum-status.sh agent code-reviewer done
 
     9. SIMPLIFY
+       - .claude/scripts/wiggum-status.sh agent code-simplifier active
        - Use Task tool → code-simplifier agent
        - "Simplify [code] for clarity"
        - Apply improvements
+       - .claude/scripts/wiggum-status.sh agent code-simplifier done
 
     10. DOCUMENT
         - Use Task tool → documentation-writer agent
@@ -345,6 +364,8 @@ WHILE chunk not complete:
         - git add [chunk files]
         - git commit -m "<type>(<scope>): <description>"
         - Atomic commit with meaningful message
+        - .claude/scripts/wiggum-status.sh commit "<hash>" "<message>"
+        - .claude/scripts/wiggum-status.sh chunk <id> "<name>" completed
 
     12. VERIFY CHUNK
         - All command gates pass?
@@ -713,6 +734,11 @@ When truly done, you MUST show mechanical proof:
 ```
 
 **You cannot write "COMPLETE" without the Command Gates table showing all ✅ PASS.**
+
+**Update status on completion:**
+```bash
+.claude/scripts/wiggum-status.sh phase complete
+```
 
 **Session cleanup is automatic:** When `wiggum-validate.sh` passes, a PostToolUse hook removes `.wiggum-session` automatically.
 
