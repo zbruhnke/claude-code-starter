@@ -8,14 +8,20 @@ import (
 
 // WiggumStatus represents the current state of a wiggum session
 type WiggumStatus struct {
-	Session     SessionInfo   `json:"session"`
-	Plan        PlanInfo      `json:"plan"`
-	CurrentTask TaskInfo      `json:"current_task"`
-	Chunks      []ChunkInfo   `json:"chunks"`
-	Gates       GatesInfo     `json:"gates"`
-	Agents      []AgentStatus `json:"agents"`
-	Commits     []CommitInfo  `json:"commits"`
-	Stats       StatsInfo     `json:"stats"`
+	Session              SessionInfo         `json:"session"`
+	Plan                 PlanInfo            `json:"plan"`
+	CurrentTask          TaskInfo            `json:"current_task"`
+	ActiveAgent          *ActiveAgentInfo    `json:"active_agent"`
+	AgentHistory         []AgentHistoryEntry `json:"agent_history"`
+	Chunks               []ChunkInfo         `json:"chunks"`
+	Gates                GatesInfo           `json:"gates"`
+	Limits               LimitsInfo          `json:"limits"`
+	StopConditions       StopConditionsInfo  `json:"stop_conditions"`
+	GateFailureCounts    GateFailureCounts   `json:"gate_failure_counts"`
+	ChunkIterationCounts map[string]int      `json:"chunk_iteration_counts"`
+	Agents               []AgentStatus       `json:"agents"`
+	Commits              []CommitInfo        `json:"commits"`
+	Stats                StatsInfo           `json:"stats"`
 }
 
 type SessionInfo struct {
@@ -43,6 +49,24 @@ type TaskInfo struct {
 	MaxAttempts int       `json:"max_attempts"`
 }
 
+// ActiveAgentInfo tracks a currently running agent
+type ActiveAgentInfo struct {
+	Name      string    `json:"name"`
+	Task      string    `json:"task"`
+	StartedAt time.Time `json:"started_at"`
+	Progress  string    `json:"progress"`
+}
+
+// AgentHistoryEntry records a completed agent run
+type AgentHistoryEntry struct {
+	Name          string    `json:"name"`
+	Task          string    `json:"task"`
+	StartedAt     time.Time `json:"started_at"`
+	EndedAt       time.Time `json:"ended_at"`
+	Status        string    `json:"status"`
+	FinalProgress string    `json:"final_progress"`
+}
+
 type ChunkInfo struct {
 	ID          int      `json:"id"`
 	Name        string   `json:"name"`
@@ -66,6 +90,29 @@ type GateResult struct {
 	Output   string    `json:"output,omitempty"`
 	LastRun  time.Time `json:"last_run,omitempty"`
 	Attempts int       `json:"attempts"`
+}
+
+// LimitsInfo contains enforcement limits
+type LimitsInfo struct {
+	MaxIterationsPerChunk int `json:"max_iterations_per_chunk"`
+	MaxGateFailures       int `json:"max_gate_failures"`
+}
+
+// StopConditionsInfo tracks if a stop condition is active
+type StopConditionsInfo struct {
+	Active      bool                   `json:"active"`
+	Reason      string                 `json:"reason"`
+	TriggeredAt time.Time              `json:"triggered_at"`
+	Details     map[string]interface{} `json:"details"`
+}
+
+// GateFailureCounts tracks consecutive failures per gate
+type GateFailureCounts struct {
+	Test      int `json:"test"`
+	Lint      int `json:"lint"`
+	TypeCheck int `json:"typecheck"`
+	Build     int `json:"build"`
+	Format    int `json:"format"`
 }
 
 type AgentStatus struct {
@@ -121,7 +168,9 @@ func NewEmptyStatus() *WiggumStatus {
 			Status:      "waiting",
 			MaxAttempts: 3,
 		},
-		Chunks: []ChunkInfo{},
+		ActiveAgent:  nil,
+		AgentHistory: []AgentHistoryEntry{},
+		Chunks:       []ChunkInfo{},
 		Gates: GatesInfo{
 			Test:      GateResult{Status: "pending"},
 			Lint:      GateResult{Status: "pending"},
@@ -129,8 +178,18 @@ func NewEmptyStatus() *WiggumStatus {
 			Build:     GateResult{Status: "pending"},
 			Format:    GateResult{Status: "pending"},
 		},
-		Agents:  []AgentStatus{},
-		Commits: []CommitInfo{},
-		Stats:   StatsInfo{},
+		Limits: LimitsInfo{
+			MaxIterationsPerChunk: 5,
+			MaxGateFailures:       3,
+		},
+		StopConditions: StopConditionsInfo{
+			Active:  false,
+			Details: make(map[string]interface{}),
+		},
+		GateFailureCounts:    GateFailureCounts{},
+		ChunkIterationCounts: make(map[string]int),
+		Agents:               []AgentStatus{},
+		Commits:              []CommitInfo{},
+		Stats:                StatsInfo{},
 	}
 }

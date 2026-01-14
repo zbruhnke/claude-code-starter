@@ -21,6 +21,107 @@ You are initiating a **Wiggum Loop** - an autonomous implementation cycle (inspi
 6. **Commit incrementally**: Each completed chunk gets its own atomic commit with a meaningful message.
 7. **Trace every path**: Follow every code path to ensure completeness. Don't assume - verify.
 
+## Configuration (`wiggum.config.json`)
+
+Wiggum uses a configuration file for reliable command discovery and enforcement limits.
+
+**Location:** `wiggum.config.json` in project root
+
+```json
+{
+  "version": "1.0",
+  "commands": {
+    "test": { "command": "npm test", "required": true, "timeout": 120000 },
+    "lint": { "command": "npm run lint", "required": true, "timeout": 60000 },
+    "typecheck": { "command": "tsc --noEmit", "required": false },
+    "build": { "command": "npm run build", "required": true },
+    "format": { "command": "prettier --write .", "required": false }
+  },
+  "limits": {
+    "max_iterations_per_chunk": 5,
+    "max_gate_failures": 3
+  }
+}
+```
+
+**Config Management:**
+```bash
+# Validate config
+.claude/scripts/wiggum-config.sh validate
+
+# Auto-detect commands from package.json, pyproject.toml, etc.
+.claude/scripts/wiggum-config.sh discover
+
+# Query a config value
+.claude/scripts/wiggum-config.sh get commands.test.command
+```
+
+If no config file exists, commands are discovered from CLAUDE.md (legacy behavior).
+
+## Stop Condition Enforcement
+
+Stop conditions are **mechanically enforced** via hooks. When limits are exceeded, the session is blocked until resolved.
+
+**Enforced Limits:**
+- **3 consecutive failures** on the same gate → STOP
+- **5 iterations** on the same chunk → STOP
+
+**Enforcement Script:**
+```bash
+# Check enforcement status
+.claude/scripts/wiggum-enforce.sh status
+
+# Clear stop condition (requires understanding what caused it)
+.claude/scripts/wiggum-enforce.sh clear
+
+# Reset a gate's failure count
+.claude/scripts/wiggum-enforce.sh reset-gate test
+```
+
+When stopped, you'll see a banner in the TUI and all Bash commands will be blocked until you clear the stop condition.
+
+## Active Agent Tracking
+
+The TUI shows real-time agent activity. Update it as you work:
+
+```bash
+# When starting an agent task
+.claude/scripts/wiggum-status.sh agent-start "Plan" "Designing implementation approach"
+
+# Update progress during the task
+.claude/scripts/wiggum-status.sh agent-progress "Found 15 relevant files"
+
+# When agent task completes
+.claude/scripts/wiggum-status.sh agent-end "completed"
+```
+
+This displays in the TUI's "ACTIVE AGENT" panel showing name, task, progress, and duration.
+
+## Session Persistence
+
+Sessions can be resumed if interrupted.
+
+**Session Files:**
+- `.wiggum-session` - Session marker (JSON with state)
+- `.wiggum-spec.md` - Saved spec for resumption
+- `.wiggum-status.json` - Runtime status for TUI
+
+**Checkpointing:**
+```bash
+# Save a checkpoint
+.claude/scripts/wiggum-session.sh checkpoint
+
+# View session status
+.claude/scripts/wiggum-session.sh status
+```
+
+**Resuming an Interrupted Session:**
+```
+/wiggum-resume
+```
+
+The resume skill reads the session state and provides context to continue from the last checkpoint.
+
 ## Input Handling
 
 You MUST receive a clear specification. If not provided:
@@ -43,6 +144,9 @@ cp .claude/hooks/wiggum-precommit.sh .git/hooks/pre-commit 2>/dev/null; chmod +x
 
 # Initialize TUI status dashboard
 .claude/scripts/wiggum-status.sh init
+
+# Mark yourself as the active agent
+.claude/scripts/wiggum-status.sh agent-start "Wiggum" "Initializing session"
 ```
 
 **The `.wiggum-session` file activates mechanical enforcement:**
@@ -50,11 +154,19 @@ cp .claude/hooks/wiggum-precommit.sh .git/hooks/pre-commit 2>/dev/null; chmod +x
 - Git will block commits if tests fail
 - Git will block commits if lint fails
 
-**TUI Dashboard (Optional):**
+**TUI Dashboard (Recommended):**
 Run in a separate terminal to monitor progress in real-time:
 ```bash
-./tui/wiggum-tui
+cd /path/to/project && ./tui/wiggum-tui
 ```
+
+The TUI shows:
+- Current phase and iteration
+- Active agent with task and progress
+- Gate status with failure counts `[1/3]`
+- Chunk progress with iteration counts
+- Stop condition banner (when active)
+- Recent commits
 
 **Step 1: Get the Spec**
 
@@ -131,18 +243,32 @@ If the script shows `VALIDATION FAILED`:
 
 This is not optional. This is not a suggestion. This is enforcement.
 
-## Stop Conditions (Prevent Runaway)
+## Stop Conditions (Mechanically Enforced)
 
-**These limits prevent infinite loops and wasted effort:**
+**These limits are enforced by hooks - you will be blocked from proceeding:**
 
-| Condition | Limit | Action |
-|-----------|-------|--------|
-| Failed attempts on same gate | 3 | STOP. Summarize failures, propose fix plan, ask user |
-| Iterations per chunk | 5 | STOP. Re-plan the chunk, it's too big or unclear |
+| Condition | Limit | Enforcement |
+|-----------|-------|-------------|
+| Failed attempts on same gate | 3 | `wiggum-enforce-hook.sh` blocks all Bash commands |
+| Iterations per chunk | 5 | `wiggum-enforce.sh` triggers stop condition |
 
 Complex specs with many chunks will naturally have many total iterations - that's fine. The per-chunk and per-gate limits catch actual problems.
 
 **When you hit a stop condition:**
+
+1. The TUI will show a red **STOP** banner
+2. All Bash commands will be blocked
+3. You must resolve the issue and clear the stop:
+
+```bash
+# Check what caused the stop
+.claude/scripts/wiggum-enforce.sh status
+
+# After understanding and addressing the issue
+.claude/scripts/wiggum-enforce.sh clear
+```
+
+**Report format for stop conditions:**
 ```markdown
 ## Loop Stopped - [Reason]
 
@@ -181,25 +307,37 @@ Complex specs with many chunks will naturally have many total iterations - that'
 
 ### Command Discovery (Required)
 
-Parse CLAUDE.md and extract commands. If ANY are missing, ask once:
+**Preferred:** Load commands from `wiggum.config.json`:
+```bash
+.claude/scripts/wiggum-config.sh validate
+```
+
+**Fallback:** If no config, parse CLAUDE.md for commands.
+
+**Auto-detect commands** from your project files:
+```bash
+.claude/scripts/wiggum-config.sh discover
+```
+
+This detects commands from `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, etc.
 
 ```markdown
 ## Commands Discovered
 
-| Gate | Command | Status |
+| Gate | Command | Source |
 |------|---------|--------|
-| TEST | `npm test` | ✓ Found |
-| LINT | `npm run lint` | ✓ Found |
-| TYPECHECK | `tsc --noEmit` | ✓ Found |
-| BUILD | `npm run build` | ✓ Found |
-| FORMAT | `prettier --write` | ✓ Found |
+| TEST | `npm test` | wiggum.config.json |
+| LINT | `npm run lint` | wiggum.config.json |
+| TYPECHECK | `tsc --noEmit` | wiggum.config.json |
+| BUILD | `npm run build` | wiggum.config.json |
+| FORMAT | `prettier --write` | wiggum.config.json |
 
 Ready to proceed.
 ```
 
 If commands are missing:
 ```
-I found these commands in CLAUDE.md:
+I found these commands:
 - TEST: npm test
 - LINT: (not found)
 - BUILD: (not found)
@@ -762,12 +900,56 @@ If plan needs to change significantly:
 2. Explain what changed and why
 3. Get user approval for the new approach
 
+## Session Management
+
+**Start a session:**
+```bash
+.claude/scripts/wiggum-session.sh start "Your spec here"
+```
+
+**Checkpoint progress:**
+```bash
+.claude/scripts/wiggum-session.sh checkpoint
+```
+
+**End session (validates first):**
+```bash
+.claude/scripts/wiggum-session.sh end
+```
+
+**Abort without validation:**
+```bash
+.claude/scripts/wiggum-session.sh abort
+```
+
+**Resume interrupted session:**
+```
+/wiggum-resume
+```
+
+## Files Reference
+
+| File | Purpose |
+|------|---------|
+| `wiggum.config.json` | Project configuration (commands, limits) |
+| `.wiggum-session` | Session marker and state (JSON) |
+| `.wiggum-spec.md` | Saved spec for resumption |
+| `.wiggum-status.json` | Runtime status for TUI |
+| `.claude/scripts/wiggum-status.sh` | Update status file |
+| `.claude/scripts/wiggum-enforce.sh` | Stop condition enforcement |
+| `.claude/scripts/wiggum-session.sh` | Session lifecycle |
+| `.claude/scripts/wiggum-config.sh` | Config management |
+| `.claude/scripts/wiggum-validate.sh` | Final validation |
+| `tui/wiggum-tui` | TUI dashboard binary |
+
 ## Remember
 
 - **Plan first**: Always get user approval before implementing
 - **You are persistent**: Like Ralph Wiggum, you keep going despite setbacks
 - **Iteration is your friend**: Each pass makes the code better
 - **Quality gates exist to help**: They catch issues before they become problems
+- **Stop conditions are mechanical**: You will be blocked, not just warned
+- **Track your agents**: Use agent-start/progress/end for TUI visibility
 - **Document everything**: Code, decisions, and changelog
 - **Commit incrementally**: Small, atomic commits are better than one giant commit
 - **"Done" means DONE**: Not "mostly done" or "done enough"

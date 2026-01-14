@@ -1,0 +1,67 @@
+{
+  "$schema": "./.claude/schemas/wiggum-config.schema.json",
+  "version": "1.0",
+  "commands": {
+    "test": {
+      "command": "",
+      "required": true,
+      "timeout": 120000
+    },
+    "lint": {
+      "command": "",
+      "required": true,
+      "timeout": 60000
+    },
+    "typecheck": {
+      "command": "",
+      "required": false,
+      "timeout": 60000
+    },
+    "build": {
+      "command": "",
+      "required": false,
+      "timeout": 180000
+    },
+    "format": {
+      "command": "",
+      "required": false,
+      "timeout": 30000
+    }
+  },
+  "limits": {
+    "max_iterations_per_chunk": 5,
+    "max_gate_failures": 3,
+    "max_chunk_lines": 300,
+    "max_chunk_files": 5
+  },
+  "agents": {
+    "researcher": {
+      "enabled": true
+    },
+    "test-writer": {
+      "enabled": true
+    },
+    "code-reviewer": {
+      "enabled": true,
+      "security_checklist": true
+    },
+    "code-simplifier": {
+      "enabled": true
+    },
+    "documentation-writer": {
+      "enabled": true
+    },
+    "adr-writer": {
+      "enabled": true
+    }
+  },
+  "paths": {
+    "adr": "docs/adr",
+    "changelog": "CHANGELOG.md",
+    "docs": "docs"
+  },
+  "dependencies": {
+    "require_approval": true,
+    "allowed_licenses": ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC", "0BSD", "Unlicense"]
+  }
+}

@@ -63,6 +63,13 @@ var (
 		BorderForeground(pastelLavender).
 		Padding(0, 1)
 
+	// Stop banner style - prominent red
+	stopBannerStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(darkText).
+			Background(pastelPink).
+			Padding(0, 2)
+
 	passedStyle = lipgloss.NewStyle().
 			Foreground(pastelMint).
 			Bold(true)
@@ -171,7 +178,17 @@ func (m model) View() string {
 	b.WriteString("\n")
 
 	b.WriteString(dimStyle.Render(separator))
-	b.WriteString("\n\n")
+	b.WriteString("\n")
+
+	// Stop condition banner (if active)
+	if m.status.StopConditions.Active {
+		b.WriteString("\n")
+		banner := m.renderStopBanner()
+		b.WriteString(banner)
+		b.WriteString("\n")
+	}
+
+	b.WriteString("\n")
 
 	// Error/waiting display
 	if m.err != nil {
@@ -202,18 +219,62 @@ func (m model) View() string {
 	b.WriteString("\n")
 	b.WriteString(dimStyle.Render(" [Q] Quit  [R] Refresh                    "))
 	status := "● Monitoring"
-	if m.status.Session.Phase == "complete" {
+	if m.status.StopConditions.Active {
+		status = "!! STOPPED"
+	} else if m.status.Session.Phase == "complete" {
 		status = "✓ Complete"
 	} else if m.err != nil {
 		status = "○ Standby"
 	}
-	b.WriteString(textStyle.Render(status))
+
+	if m.status.StopConditions.Active {
+		b.WriteString(failedStyle.Render(status))
+	} else {
+		b.WriteString(textStyle.Render(status))
+	}
 
 	return b.String()
 }
 
+// renderStopBanner shows the stop condition prominently
+func (m model) renderStopBanner() string {
+	sc := m.status.StopConditions
+	blink := blinkFrames[m.frame]
+
+	reason := sc.Reason
+	if reason == "gate_failure" {
+		if gate, ok := sc.Details["gate"].(string); ok {
+			reason = fmt.Sprintf("Gate '%s' failed too many times", gate)
+		}
+	} else if reason == "chunk_iterations" {
+		if chunkID, ok := sc.Details["chunk_id"].(string); ok {
+			reason = fmt.Sprintf("Chunk %s exceeded iteration limit", chunkID)
+		}
+	}
+
+	banner := stopBannerStyle.Render(fmt.Sprintf(" %s STOPPED: %s %s ", blink, reason, blink))
+
+	// Center the banner
+	bannerWidth := lipgloss.Width(banner)
+	leftPad := (m.width - bannerWidth) / 2
+	if leftPad < 0 {
+		leftPad = 0
+	}
+
+	return strings.Repeat(" ", leftPad) + banner
+}
+
 func (m model) renderLeftColumn() string {
 	var b strings.Builder
+
+	// Active Agent (if running)
+	if m.status.ActiveAgent != nil {
+		b.WriteString(headerStyle.Render("◈ Active Agent"))
+		b.WriteString("\n")
+		agentContent := m.renderActiveAgent()
+		b.WriteString(activeBoxStyle.Render(agentContent))
+		b.WriteString("\n\n")
+	}
 
 	// Session Info
 	b.WriteString(headerStyle.Render("◈ Session"))
@@ -266,6 +327,40 @@ func (m model) renderRightColumn() string {
 	b.WriteString(boxStyle.Render(commitsContent))
 
 	return b.String()
+}
+
+// renderActiveAgent shows the currently running agent
+func (m model) renderActiveAgent() string {
+	agent := m.status.ActiveAgent
+	if agent == nil {
+		return dimStyle.Render("< NO ACTIVE AGENT >")
+	}
+
+	var lines []string
+
+	// Agent name with blinking indicator
+	blink := blinkFrames[m.frame]
+	name := runningStyle.Render(fmt.Sprintf("%s %s", blink, agent.Name))
+	lines = append(lines, name)
+
+	// Task description
+	if agent.Task != "" {
+		lines = append(lines, textStyle.Render(agent.Task))
+	}
+
+	// Progress
+	if agent.Progress != "" {
+		lines = append(lines, dimStyle.Render(agent.Progress))
+	}
+
+	// Running time
+	if !agent.StartedAt.IsZero() {
+		elapsed := time.Since(agent.StartedAt).Round(time.Second)
+		lines = append(lines, "")
+		lines = append(lines, dimStyle.Render(fmt.Sprintf("Running: %s", elapsed.String())))
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 func (m model) renderSessionInfo() string {
@@ -360,6 +455,14 @@ func (m model) renderChunks() string {
 		icon := chunkIcon(c.Status)
 		num := fmt.Sprintf("%02d", c.ID)
 
+		// Get iteration count for this chunk
+		iterCount := 0
+		if m.status.ChunkIterationCounts != nil {
+			if count, ok := m.status.ChunkIterationCounts[fmt.Sprintf("%d", c.ID)]; ok {
+				iterCount = count
+			}
+		}
+
 		var line string
 		switch c.Status {
 		case "completed":
@@ -367,6 +470,20 @@ func (m model) renderChunks() string {
 		case "in_progress":
 			blink := blinkFrames[m.frame]
 			line = runningStyle.Render(fmt.Sprintf("%s [%s] %s %s", icon, num, c.Name, blink))
+			// Show iteration count for in-progress chunks
+			if iterCount > 0 {
+				maxIter := m.status.Limits.MaxIterationsPerChunk
+				if maxIter == 0 {
+					maxIter = 5
+				}
+				iterStyle := dimStyle
+				if iterCount >= maxIter {
+					iterStyle = failedStyle
+				} else if iterCount > maxIter/2 {
+					iterStyle = runningStyle
+				}
+				line += iterStyle.Render(fmt.Sprintf(" [%d/%d]", iterCount, maxIter))
+			}
 		case "failed":
 			line = failedStyle.Render(fmt.Sprintf("%s [%s] %s", icon, num, c.Name))
 		default:
@@ -380,16 +497,22 @@ func (m model) renderChunks() string {
 
 func (m model) renderGates() string {
 	g := m.status.Gates
+	fc := m.status.GateFailureCounts
+	maxFail := m.status.Limits.MaxGateFailures
+	if maxFail == 0 {
+		maxFail = 3
+	}
 
 	gates := []struct {
-		name   string
-		result GateResult
+		name      string
+		result    GateResult
+		failCount int
 	}{
-		{"TEST", g.Test},
-		{"LINT", g.Lint},
-		{"TYPECHECK", g.TypeCheck},
-		{"BUILD", g.Build},
-		{"FORMAT", g.Format},
+		{"TEST", g.Test, fc.Test},
+		{"LINT", g.Lint, fc.Lint},
+		{"TYPECHECK", g.TypeCheck, fc.TypeCheck},
+		{"BUILD", g.Build, fc.Build},
+		{"FORMAT", g.Format, fc.Format},
 	}
 
 	var lines []string
@@ -399,8 +522,8 @@ func (m model) renderGates() string {
 		if cmd == "" {
 			cmd = "---"
 		}
-		if len(cmd) > 18 {
-			cmd = cmd[:15] + "..."
+		if len(cmd) > 15 {
+			cmd = cmd[:12] + "..."
 		}
 
 		var line string
@@ -417,6 +540,16 @@ func (m model) renderGates() string {
 		default:
 			line = fmt.Sprintf("%s %s %s", dimStyle.Render(icon), dimStyle.Render(status), dimStyle.Render(cmd))
 		}
+
+		// Add failure count indicator
+		if gate.failCount > 0 {
+			countStyle := runningStyle
+			if gate.failCount >= maxFail {
+				countStyle = failedStyle
+			}
+			line += countStyle.Render(fmt.Sprintf(" [%d/%d]", gate.failCount, maxFail))
+		}
+
 		lines = append(lines, line)
 	}
 
