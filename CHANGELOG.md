@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Wiggum TUI Dashboard** - Real-time terminal dashboard for monitoring wiggum sessions
+  - Soft pastel color palette (mint, blue, peach, pink, lavender, yellow)
+  - Session info, current task, chunks progress, command gates, agent status, commits
+  - Auto-launch in new terminal window when `/wiggum` is invoked (macOS and Linux)
+  - Disable auto-launch with `WIGGUM_NO_TUI=1` environment variable
+  - Manual run: `./tui/wiggum-tui`
+
 ### Fixed
 - Remove unnecessary Bash 4.0 requirement - scripts now work with macOS default Bash 3.2
 
-### Added
+### Previously Added
 - **wiggum-session-start.sh** - PreToolUse hook that AUTOMATICALLY creates `.wiggum-session` when wiggum skill is invoked
   - Claude cannot skip this - Claude Code runs the hook mechanically before skill execution
   - Solves the "gentleman's agreement" problem where Claude could ignore session marker instructions

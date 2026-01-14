@@ -1,6 +1,6 @@
 # Wiggum TUI Dashboard
 
-A real-time terminal dashboard for monitoring Wiggum loop sessions.
+A real-time terminal dashboard for monitoring Wiggum loop sessions with a soft pastel aesthetic.
 
 ## Features
 
@@ -10,6 +10,7 @@ A real-time terminal dashboard for monitoring Wiggum loop sessions.
 - **Command Gates**: Status of TEST, LINT, TYPECHECK, BUILD, FORMAT
 - **Agents**: Status of researcher, test-writer, code-reviewer, code-simplifier
 - **Commits**: Recent commits made during the session
+- **Auto-Launch**: Automatically opens when wiggum skill is invoked
 
 ## Building
 
@@ -20,12 +21,19 @@ go build -o wiggum-tui .
 
 ## Running
 
+The TUI **automatically launches** in a new terminal window when you invoke `/wiggum`. No manual setup required.
+
+To run manually:
 ```bash
-# From the project root
 ./tui/wiggum-tui
 ```
 
-The TUI watches `.wiggum-status.json` in the current directory and auto-refreshes every second.
+### Disabling Auto-Launch
+
+If you prefer to not have the TUI auto-launch:
+```bash
+export WIGGUM_NO_TUI=1
+```
 
 ## Status File
 
@@ -67,45 +75,58 @@ The TUI reads from `.wiggum-status.json`. Use the helper script to update it:
 ## Preview
 
 ```
-▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
- ◄ WIGGUM COMMAND CENTER ►                                    [14:32:07]
-▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+───────────────────────────────────────────────────────────────────────────────
+ ✦ WIGGUM DASHBOARD ✦                                          ⏱ 14:32:07
+───────────────────────────────────────────────────────────────────────────────
 
-■ SESSION DATA                      ■ COMMAND GATES
-┌─────────────────────────────┐     ┌─────────────────────────────────┐
-│ PHASE.....: ▶ IMPLEMENTING  │     │ [✓] TEST      npm test          │
-│ ITERATION.: [████████░░░░] 3/5    │ [✓] LINT      npm run lint      │
-│ ELAPSED...: 15m30s          │     │ [~] TYPECHECK tsc --noEmit █    │
-│ BASE......: abc1234         │     │ [ ] BUILD     npm run build     │
-│                             │     │ [-] FORMAT    ---               │
-│ CHUNKS: 1/3  COMMITS: 2     │     └─────────────────────────────────┘
-└─────────────────────────────┘
-                                    ■ AGENT STATUS
-■ ACTIVE TASK                       ┌─────────────────────────────────┐
-╔═════════════════════════════╗     │ [X] researcher                  │
-║ █ Implement token valid...  ║     │ [▓] test-writer        !1W      │
-║ Create JWT validation       ║     │ [ ] code-reviewer               │
-║                             ║     │ [ ] code-simplifier             │
-║ STATUS: RUNNING  ATTEMPT: 2/3     └─────────────────────────────────┘
-╚═════════════════════════════╝
-                                    ■ GIT LOG
-■ CHUNK PROGRESS                    ┌─────────────────────────────────┐
-┌─────────────────────────────┐     │ a1b2c3d feat(auth): add login   │
-│ ■ [01] Login endpoint       │     │ b2c3d4e test(auth): add tests   │
-│ ▶ [02] Token validation █   │     └─────────────────────────────────┘
-│ □ [03] Logout functionality │
-└─────────────────────────────┘
+◈ Session                               ◈ Gates
+╭─────────────────────────────╮         ╭─────────────────────────────────╮
+│ Phase     ● Implementing    │         │ ✓ TEST      npm test            │
+│ Iteration [████████░░░] 3/5 │         │ ✓ LINT      npm run lint        │
+│ Elapsed   15m30s            │         │ ◐ TYPECHECK tsc --noEmit        │
+│ Base      abc1234           │         │ ○ BUILD     npm run build       │
+│                             │         │ − FORMAT    ---                 │
+│ Chunks: 1/3  Commits: 2     │         ╰─────────────────────────────────╯
+╰─────────────────────────────╯
+                                        ◈ Agents
+◈ Active Task                           ╭─────────────────────────────────╮
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓         │ ✓ researcher                    │
+┃ ◉ Implement token valid...  ┃         │ ◐ test-writer          !1W      │
+┃ Create JWT validation       ┃         │ ○ code-reviewer                 │
+┃                             ┃         │ ○ code-simplifier               │
+┃ Status: Running  Attempt: 2/3         ╰─────────────────────────────────╯
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                        ◈ Commits
+◈ Chunks                                ╭─────────────────────────────────╮
+╭─────────────────────────────╮         │ a1b2c3d feat(auth): add login   │
+│ ● [01] Login endpoint       │         │ b2c3d4e test(auth): add tests   │
+│ ◐ [02] Token validation     │         ╰─────────────────────────────────╯
+│ ○ [03] Logout functionality │
+╰─────────────────────────────╯
 
-▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
- [Q]UIT  [R]EFRESH                              STATUS: MONITORING
+───────────────────────────────────────────────────────────────────────────────
+ [Q] Quit  [R] Refresh                                    ● Monitoring
 ```
 
-The retro green phosphor CRT aesthetic includes:
-- Blinking cursors (█▓▒░) for active items
-- Progress bars with block characters
-- Double-line borders for active task
-- Scanline separators
+## Color Palette
 
-## Integration with Wiggum Skill
+The dashboard uses a soft pastel color scheme:
 
-The wiggum skill should be updated to emit status updates using the helper script throughout its execution. This enables real-time monitoring of autonomous implementation sessions.
+| Element | Color | Hex |
+|---------|-------|-----|
+| Success/Primary | Mint | #98D8C8 |
+| Info/Secondary | Sky Blue | #7EC8E3 |
+| In Progress | Peach | #FFCBA4 |
+| Error/Failed | Coral Pink | #FFB3BA |
+| Active/Accent | Lavender | #C9B1FF |
+| Highlight | Lemon | #FDFD96 |
+| Muted/Dim | Gray | #9E9E9E |
+
+## Platform Support
+
+**Auto-launch works on:**
+- macOS (uses AppleScript to open Terminal.app)
+- Linux (supports gnome-terminal, xterm)
+
+**Manual run works on:**
+- Any platform with a terminal that supports 256 colors or true color

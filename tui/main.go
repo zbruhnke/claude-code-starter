@@ -12,24 +12,27 @@ import (
 
 const statusFile = ".wiggum-status.json"
 
-// Retro CRT color palette
+// Pastel color palette - soft, modern aesthetic
 var (
-	phosphorGreen = lipgloss.Color("46")  // Bright green
-	dimGreen      = lipgloss.Color("28")  // Dim green
-	amberColor    = lipgloss.Color("214") // Amber/orange
-	alertRed      = lipgloss.Color("196") // Red for errors
-	crtBackground = lipgloss.Color("16")  // Near black
+	pastelMint     = lipgloss.Color("#98D8C8") // Primary - soft mint green (success)
+	pastelBlue     = lipgloss.Color("#7EC8E3") // Secondary - light sky blue (info)
+	pastelPeach    = lipgloss.Color("#FFCBA4") // Warning - soft peach (in progress)
+	pastelPink     = lipgloss.Color("#FFB3BA") // Error - soft coral pink (failed)
+	pastelLavender = lipgloss.Color("#C9B1FF") // Accent - soft lavender (active)
+	pastelYellow   = lipgloss.Color("#FDFD96") // Highlight - soft lemon
+	pastelGray     = lipgloss.Color("#9E9E9E") // Dim text
+	darkText       = lipgloss.Color("#2D2D2D") // Dark text for contrast
 
 	// Styles
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("16")).
-			Background(phosphorGreen).
+			Foreground(darkText).
+			Background(pastelMint).
 			Padding(0, 1)
 
 	headerStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(phosphorGreen).
+			Foreground(pastelBlue).
 			Underline(true)
 
 	boxStyle = lipgloss.NewStyle().
@@ -38,50 +41,50 @@ var (
 			Bottom:      "─",
 			Left:        "│",
 			Right:       "│",
-			TopLeft:     "┌",
-			TopRight:    "┐",
-			BottomLeft:  "└",
-			BottomRight: "┘",
+			TopLeft:     "╭",
+			TopRight:    "╮",
+			BottomLeft:  "╰",
+			BottomRight: "╯",
 		}).
-		BorderForeground(dimGreen).
+		BorderForeground(pastelGray).
 		Padding(0, 1)
 
 	activeBoxStyle = lipgloss.NewStyle().
 			Border(lipgloss.Border{
-			Top:         "═",
-			Bottom:      "═",
-			Left:        "║",
-			Right:       "║",
-			TopLeft:     "╔",
-			TopRight:    "╗",
-			BottomLeft:  "╚",
-			BottomRight: "╝",
+			Top:         "━",
+			Bottom:      "━",
+			Left:        "┃",
+			Right:       "┃",
+			TopLeft:     "┏",
+			TopRight:    "┓",
+			BottomLeft:  "┗",
+			BottomRight: "┛",
 		}).
-		BorderForeground(phosphorGreen).
+		BorderForeground(pastelLavender).
 		Padding(0, 1)
 
 	passedStyle = lipgloss.NewStyle().
-			Foreground(phosphorGreen).
+			Foreground(pastelMint).
 			Bold(true)
 
 	failedStyle = lipgloss.NewStyle().
-			Foreground(alertRed).
+			Foreground(pastelPink).
 			Bold(true)
 
 	pendingStyle = lipgloss.NewStyle().
-			Foreground(dimGreen)
+			Foreground(pastelGray)
 
 	runningStyle = lipgloss.NewStyle().
-			Foreground(amberColor).
+			Foreground(pastelPeach).
 			Bold(true)
 
 	textStyle = lipgloss.NewStyle().
-			Foreground(phosphorGreen)
+			Foreground(pastelBlue)
 
 	dimStyle = lipgloss.NewStyle().
-			Foreground(dimGreen)
+			Foreground(pastelGray)
 
-	blinkFrames = []string{"█", "▓", "▒", "░", "▒", "▓"}
+	blinkFrames = []string{"◉", "◎", "○", "◎", "◉", "●"}
 )
 
 type model struct {
@@ -155,25 +158,25 @@ func (m model) View() string {
 
 	var b strings.Builder
 
-	// Retro header with scanline effect
-	scanline := strings.Repeat("▀", m.width)
-	b.WriteString(dimStyle.Render(scanline))
+	// Soft header separator
+	separator := strings.Repeat("─", m.width)
+	b.WriteString(dimStyle.Render(separator))
 	b.WriteString("\n")
 
 	// Title bar
-	title := titleStyle.Render(" ◄ WIGGUM COMMAND CENTER ► ")
-	timestamp := dimStyle.Render(fmt.Sprintf("[%s]", time.Now().Format("15:04:05")))
+	title := titleStyle.Render(" ✦ WIGGUM DASHBOARD ✦ ")
+	timestamp := dimStyle.Render(fmt.Sprintf("⏱ %s", time.Now().Format("15:04:05")))
 	padding := strings.Repeat(" ", max(0, m.width-lipgloss.Width(title)-lipgloss.Width(timestamp)-2))
 	b.WriteString(title + padding + timestamp)
 	b.WriteString("\n")
 
-	b.WriteString(dimStyle.Render(scanline))
+	b.WriteString(dimStyle.Render(separator))
 	b.WriteString("\n\n")
 
 	// Error/waiting display
 	if m.err != nil {
 		blink := blinkFrames[m.frame]
-		b.WriteString(runningStyle.Render(fmt.Sprintf(" %s AWAITING SESSION... %s", blink, blink)))
+		b.WriteString(runningStyle.Render(fmt.Sprintf(" %s Awaiting session... %s", blink, blink)))
 		b.WriteString("\n")
 		b.WriteString(dimStyle.Render(fmt.Sprintf("   [%v]", m.err)))
 		b.WriteString("\n\n")
@@ -195,16 +198,16 @@ func (m model) View() string {
 
 	// Footer
 	b.WriteString("\n\n")
-	b.WriteString(dimStyle.Render(scanline))
+	b.WriteString(dimStyle.Render(separator))
 	b.WriteString("\n")
-	b.WriteString(dimStyle.Render(" [Q]UIT  [R]EFRESH                    "))
-	status := "MONITORING"
+	b.WriteString(dimStyle.Render(" [Q] Quit  [R] Refresh                    "))
+	status := "● Monitoring"
 	if m.status.Session.Phase == "complete" {
-		status = "SESSION COMPLETE"
+		status = "✓ Complete"
 	} else if m.err != nil {
-		status = "STANDBY"
+		status = "○ Standby"
 	}
-	b.WriteString(textStyle.Render(fmt.Sprintf("STATUS: %s", status)))
+	b.WriteString(textStyle.Render(status))
 
 	return b.String()
 }
@@ -213,14 +216,14 @@ func (m model) renderLeftColumn() string {
 	var b strings.Builder
 
 	// Session Info
-	b.WriteString(headerStyle.Render("■ SESSION DATA"))
+	b.WriteString(headerStyle.Render("◈ Session"))
 	b.WriteString("\n")
 	sessionContent := m.renderSessionInfo()
 	b.WriteString(boxStyle.Render(sessionContent))
 	b.WriteString("\n\n")
 
 	// Current Task
-	b.WriteString(headerStyle.Render("■ ACTIVE TASK"))
+	b.WriteString(headerStyle.Render("◈ Active Task"))
 	b.WriteString("\n")
 	taskContent := m.renderCurrentTask()
 	style := boxStyle
@@ -231,7 +234,7 @@ func (m model) renderLeftColumn() string {
 	b.WriteString("\n\n")
 
 	// Chunks
-	b.WriteString(headerStyle.Render("■ CHUNK PROGRESS"))
+	b.WriteString(headerStyle.Render("◈ Chunks"))
 	b.WriteString("\n")
 	chunksContent := m.renderChunks()
 	b.WriteString(boxStyle.Render(chunksContent))
@@ -243,21 +246,21 @@ func (m model) renderRightColumn() string {
 	var b strings.Builder
 
 	// Gates
-	b.WriteString(headerStyle.Render("■ COMMAND GATES"))
+	b.WriteString(headerStyle.Render("◈ Gates"))
 	b.WriteString("\n")
 	gatesContent := m.renderGates()
 	b.WriteString(boxStyle.Render(gatesContent))
 	b.WriteString("\n\n")
 
 	// Agents
-	b.WriteString(headerStyle.Render("■ AGENT STATUS"))
+	b.WriteString(headerStyle.Render("◈ Agents"))
 	b.WriteString("\n")
 	agentsContent := m.renderAgents()
 	b.WriteString(boxStyle.Render(agentsContent))
 	b.WriteString("\n\n")
 
 	// Commits
-	b.WriteString(headerStyle.Render("■ GIT LOG"))
+	b.WriteString(headerStyle.Render("◈ Commits"))
 	b.WriteString("\n")
 	commitsContent := m.renderCommits()
 	b.WriteString(boxStyle.Render(commitsContent))
@@ -494,58 +497,58 @@ func (m model) renderCommits() string {
 func stylePhase(phase string) string {
 	switch phase {
 	case "plan":
-		return runningStyle.Render("▶ PLANNING")
+		return runningStyle.Render("● Planning")
 	case "implement":
-		return runningStyle.Render("▶ IMPLEMENTING")
+		return runningStyle.Render("● Implementing")
 	case "review":
-		return runningStyle.Render("▶ REVIEWING")
+		return runningStyle.Render("● Reviewing")
 	case "complete":
-		return passedStyle.Render("■ COMPLETE")
+		return passedStyle.Render("✓ Complete")
 	case "waiting", "STANDBY":
-		return dimStyle.Render("○ STANDBY")
+		return dimStyle.Render("○ Standby")
 	default:
-		return dimStyle.Render("○ " + strings.ToUpper(phase))
+		return dimStyle.Render("○ " + phase)
 	}
 }
 
 func styleStatus(status string) string {
 	switch status {
 	case "completed":
-		return passedStyle.Render("DONE")
+		return passedStyle.Render("Done")
 	case "failed":
-		return failedStyle.Render("FAIL")
+		return failedStyle.Render("Failed")
 	case "in_progress":
-		return runningStyle.Render("RUNNING")
+		return runningStyle.Render("Running")
 	default:
-		return dimStyle.Render(strings.ToUpper(status))
+		return dimStyle.Render(status)
 	}
 }
 
 func chunkIcon(status string) string {
 	switch status {
 	case "completed":
-		return "■"
+		return "●"
 	case "failed":
-		return "✗"
+		return "○"
 	case "in_progress":
-		return "▶"
+		return "◐"
 	default:
-		return "□"
+		return "○"
 	}
 }
 
 func gateIcon(status string) string {
 	switch status {
 	case "passed":
-		return "[✓]"
+		return "✓"
 	case "failed":
-		return "[✗]"
+		return "✗"
 	case "running":
-		return "[~]"
+		return "◐"
 	case "skipped":
-		return "[-]"
+		return "−"
 	default:
-		return "[ ]"
+		return "○"
 	}
 }
 

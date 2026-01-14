@@ -30,6 +30,32 @@ if [ "$SKILL_NAME" = "wiggum" ]; then
 
   # Notify user
   echo "Wiggum session started - git pre-commit enforcement is now active" >&2
+
+  # Auto-launch TUI dashboard in new terminal window (unless disabled)
+  if [ -z "${WIGGUM_NO_TUI:-}" ]; then
+    PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+    TUI_PATH="$PROJECT_DIR/tui/wiggum-tui"
+
+    if [ -x "$TUI_PATH" ]; then
+      # macOS: Use AppleScript to open new Terminal window
+      if [[ "$OSTYPE" == "darwin"* ]]; then
+        osascript -e "
+          tell application \"Terminal\"
+            do script \"cd '$PROJECT_DIR' && '$TUI_PATH'\"
+            activate
+          end tell
+        " >/dev/null 2>&1 &
+        echo "TUI dashboard launched in new Terminal window" >&2
+      # Linux: Try common terminal emulators
+      elif command -v gnome-terminal &>/dev/null; then
+        gnome-terminal -- bash -c "cd '$PROJECT_DIR' && '$TUI_PATH'; exec bash" &
+        echo "TUI dashboard launched in new gnome-terminal window" >&2
+      elif command -v xterm &>/dev/null; then
+        xterm -e "cd '$PROJECT_DIR' && '$TUI_PATH'" &
+        echo "TUI dashboard launched in new xterm window" >&2
+      fi
+    fi
+  fi
 fi
 
 # Always allow the skill to proceed
