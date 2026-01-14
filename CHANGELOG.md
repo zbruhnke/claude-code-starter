@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Auto-launch in new terminal window when `/wiggum` is invoked (macOS and Linux)
   - Disable auto-launch with `WIGGUM_NO_TUI=1` environment variable
   - Manual run: `./tui/wiggum-tui`
+- **Phase-aware TUI rendering** - Dashboard now shows only relevant information for each phase
+  - **Standby**: Minimal centered "Awaiting session" view
+  - **Plan**: Shows active agent, session info, current task, and plan requirements; hides chunks/gates/commits
+  - **Implement**: Full two-column layout with all sections (conditionally shown based on data)
+  - **Review**: Gates displayed prominently at top with "ALL PASSED" indicator; agent status and session summary
+  - **Complete**: Celebration view with final stats, expanded commit history, and compact gates summary
+  - Phase-specific footer hints guide user through workflow
 
 ### Fixed
 - Remove unnecessary Bash 4.0 requirement - scripts now work with macOS default Bash 3.2

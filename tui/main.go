@@ -163,15 +163,40 @@ func (m model) View() string {
 		return textStyle.Render("INITIALIZING...")
 	}
 
-	var b strings.Builder
+	// Guard against nil status
+	if m.status == nil {
+		return m.renderStandbyPhase()
+	}
 
-	// Soft header separator
+	// Dispatch to phase-specific view
+	phase := m.status.Session.Phase
+	if m.err != nil && phase == "" {
+		phase = "standby"
+	}
+
+	switch phase {
+	case "plan":
+		return m.renderPlanPhase()
+	case "implement":
+		return m.renderImplementPhase()
+	case "review":
+		return m.renderReviewPhase()
+	case "complete":
+		return m.renderCompletePhase()
+	default:
+		return m.renderStandbyPhase()
+	}
+}
+
+// renderCommonHeader renders the header bar common to all phases
+func (m model) renderCommonHeader(phaseTitle string) string {
+	var b strings.Builder
 	separator := strings.Repeat("─", m.width)
+
 	b.WriteString(dimStyle.Render(separator))
 	b.WriteString("\n")
 
-	// Title bar
-	title := titleStyle.Render(" ✦ WIGGUM DASHBOARD ✦ ")
+	title := titleStyle.Render(fmt.Sprintf(" ✦ %s ✦ ", phaseTitle))
 	timestamp := dimStyle.Render(fmt.Sprintf("⏱ %s", time.Now().Format("15:04:05")))
 	padding := strings.Repeat(" ", max(0, m.width-lipgloss.Width(title)-lipgloss.Width(timestamp)-2))
 	b.WriteString(title + padding + timestamp)
@@ -183,27 +208,136 @@ func (m model) View() string {
 	// Stop condition banner (if active)
 	if m.status.StopConditions.Active {
 		b.WriteString("\n")
-		banner := m.renderStopBanner()
-		b.WriteString(banner)
+		b.WriteString(m.renderStopBanner())
 		b.WriteString("\n")
 	}
 
+	return b.String()
+}
+
+// renderCommonFooter renders the footer with phase-specific hints
+func (m model) renderCommonFooter(hint string, status string, statusStyle lipgloss.Style) string {
+	var b strings.Builder
+	separator := strings.Repeat("─", m.width)
+
+	b.WriteString("\n")
+	b.WriteString(dimStyle.Render(separator))
 	b.WriteString("\n")
 
-	// Error/waiting display
+	footerLeft := dimStyle.Render(fmt.Sprintf(" [Q] Quit  [R] Refresh    %s", hint))
+	footerRight := statusStyle.Render(status)
+
+	padding := strings.Repeat(" ", max(0, m.width-lipgloss.Width(footerLeft)-lipgloss.Width(footerRight)-2))
+	b.WriteString(footerLeft + padding + footerRight + " ")
+
+	return b.String()
+}
+
+// renderStandbyPhase shows minimal view when no session is active
+func (m model) renderStandbyPhase() string {
+	var b strings.Builder
+
+	b.WriteString(m.renderCommonHeader("WIGGUM"))
+	b.WriteString("\n")
+
+	// Centered waiting message
+	blink := blinkFrames[m.frame]
+	waitingMsg := fmt.Sprintf("%s Awaiting session... %s", blink, blink)
+	helpMsg := "Run /wiggum to start a session"
+
+	// Center the messages
+	waitingWidth := lipgloss.Width(waitingMsg)
+	helpWidth := lipgloss.Width(helpMsg)
+	waitingPad := (m.width - waitingWidth) / 2
+	helpPad := (m.width - helpWidth) / 2
+
+	b.WriteString("\n\n")
+	b.WriteString(strings.Repeat(" ", max(0, waitingPad)))
+	b.WriteString(runningStyle.Render(waitingMsg))
+	b.WriteString("\n\n")
+	b.WriteString(strings.Repeat(" ", max(0, helpPad)))
+	b.WriteString(dimStyle.Render(helpMsg))
+	b.WriteString("\n\n")
+
 	if m.err != nil {
-		blink := blinkFrames[m.frame]
-		b.WriteString(runningStyle.Render(fmt.Sprintf(" %s Awaiting session... %s", blink, blink)))
+		errMsg := fmt.Sprintf("[%v]", m.err)
+		errWidth := lipgloss.Width(errMsg)
+		errPad := (m.width - errWidth) / 2
+		b.WriteString(strings.Repeat(" ", max(0, errPad)))
+		b.WriteString(dimStyle.Render(errMsg))
 		b.WriteString("\n")
-		b.WriteString(dimStyle.Render(fmt.Sprintf("   [%v]", m.err)))
+	}
+
+	b.WriteString(m.renderCommonFooter("", "○ Standby", dimStyle))
+
+	return b.String()
+}
+
+// renderPlanPhase shows focused view during planning
+func (m model) renderPlanPhase() string {
+	var b strings.Builder
+
+	b.WriteString(m.renderCommonHeader("PLANNING"))
+	b.WriteString("\n")
+
+	// Single column layout for plan phase
+	contentWidth := m.width - 4
+
+	// Session info (minimal)
+	b.WriteString(headerStyle.Render("◈ Session"))
+	b.WriteString("\n")
+	sessionContent := m.renderMinimalSessionInfo()
+	b.WriteString(lipgloss.NewStyle().Width(contentWidth).Render(boxStyle.Render(sessionContent)))
+	b.WriteString("\n\n")
+
+	// Active Agent (prominent if running)
+	if m.status.ActiveAgent != nil {
+		b.WriteString(headerStyle.Render("◈ Active Agent"))
+		b.WriteString("\n")
+		agentContent := m.renderActiveAgent()
+		b.WriteString(lipgloss.NewStyle().Width(contentWidth).Render(activeBoxStyle.Render(agentContent)))
 		b.WriteString("\n\n")
 	}
 
-	// Main content in columns
-	leftCol := m.renderLeftColumn()
-	rightCol := m.renderRightColumn()
+	// Current Task (if any)
+	if m.status.CurrentTask.Name != "" {
+		b.WriteString(headerStyle.Render("◈ Current Task"))
+		b.WriteString("\n")
+		taskContent := m.renderCurrentTask()
+		style := boxStyle
+		if m.status.CurrentTask.Status == "in_progress" {
+			style = activeBoxStyle
+		}
+		b.WriteString(lipgloss.NewStyle().Width(contentWidth).Render(style.Render(taskContent)))
+		b.WriteString("\n")
+	}
 
-	// Calculate column widths
+	// Plan requirements if populated
+	if len(m.status.Plan.MustHave) > 0 || len(m.status.Plan.ShouldHave) > 0 {
+		b.WriteString("\n")
+		b.WriteString(headerStyle.Render("◈ Requirements"))
+		b.WriteString("\n")
+		planContent := m.renderPlanRequirements()
+		b.WriteString(lipgloss.NewStyle().Width(contentWidth).Render(boxStyle.Render(planContent)))
+		b.WriteString("\n")
+	}
+
+	b.WriteString(m.renderCommonFooter("", "● Planning", runningStyle))
+
+	return b.String()
+}
+
+// renderImplementPhase shows full view during implementation
+func (m model) renderImplementPhase() string {
+	var b strings.Builder
+
+	b.WriteString(m.renderCommonHeader("IMPLEMENTING"))
+	b.WriteString("\n")
+
+	// Two-column layout
+	leftCol := m.renderImplementLeftColumn()
+	rightCol := m.renderImplementRightColumn()
+
 	leftWidth := m.width/2 - 2
 	rightWidth := m.width/2 - 2
 
@@ -213,27 +347,428 @@ func (m model) View() string {
 	columns := lipgloss.JoinHorizontal(lipgloss.Top, leftCol, "  ", rightCol)
 	b.WriteString(columns)
 
-	// Footer
-	b.WriteString("\n\n")
-	b.WriteString(dimStyle.Render(separator))
+	b.WriteString(m.renderCommonFooter("Watch gates", "● Implementing", runningStyle))
+
+	return b.String()
+}
+
+// renderReviewPhase shows gates-focused view during review
+func (m model) renderReviewPhase() string {
+	var b strings.Builder
+
+	b.WriteString(m.renderCommonHeader("FINAL REVIEW"))
 	b.WriteString("\n")
-	b.WriteString(dimStyle.Render(" [Q] Quit  [R] Refresh                    "))
-	status := "● Monitoring"
-	if m.status.StopConditions.Active {
-		status = "!! STOPPED"
-	} else if m.status.Session.Phase == "complete" {
-		status = "✓ Complete"
-	} else if m.err != nil {
-		status = "○ Standby"
+
+	contentWidth := m.width - 4
+
+	// Prominent gates section at top
+	allPassed := m.allGatesPassed()
+	gatesHeader := "◈ GATES"
+	if allPassed {
+		gatesHeader = "◈ GATES - ALL PASSED ✓"
+	}
+	b.WriteString(headerStyle.Render(gatesHeader))
+	b.WriteString("\n")
+	gatesContent := m.renderGatesExpanded()
+	b.WriteString(lipgloss.NewStyle().Width(contentWidth).Render(activeBoxStyle.Render(gatesContent)))
+	b.WriteString("\n\n")
+
+	// Active agent if running
+	if m.status.ActiveAgent != nil {
+		b.WriteString(headerStyle.Render("◈ Active Agent"))
+		b.WriteString("\n")
+		agentContent := m.renderActiveAgent()
+		b.WriteString(lipgloss.NewStyle().Width(contentWidth).Render(activeBoxStyle.Render(agentContent)))
+		b.WriteString("\n\n")
 	}
 
-	if m.status.StopConditions.Active {
-		b.WriteString(failedStyle.Render(status))
-	} else {
-		b.WriteString(textStyle.Render(status))
+	// Agent status (important for review)
+	b.WriteString(headerStyle.Render("◈ Agent Status"))
+	b.WriteString("\n")
+	agentsContent := m.renderAgentsCompact()
+	b.WriteString(lipgloss.NewStyle().Width(contentWidth).Render(boxStyle.Render(agentsContent)))
+	b.WriteString("\n\n")
+
+	// Session summary
+	b.WriteString(headerStyle.Render("◈ Session Summary"))
+	b.WriteString("\n")
+	summaryContent := m.renderSessionSummary()
+	b.WriteString(lipgloss.NewStyle().Width(contentWidth).Render(boxStyle.Render(summaryContent)))
+	b.WriteString("\n")
+
+	hint := "All gates must show ✓"
+	b.WriteString(m.renderCommonFooter(hint, "● Reviewing", runningStyle))
+
+	return b.String()
+}
+
+// renderCompletePhase shows celebration view when done
+func (m model) renderCompletePhase() string {
+	var b strings.Builder
+
+	b.WriteString(m.renderCommonHeader("COMPLETE ✓"))
+	b.WriteString("\n")
+
+	contentWidth := m.width - 4
+
+	// Success message
+	successMsg := "Session completed successfully"
+	successWidth := lipgloss.Width(successMsg)
+	successPad := (m.width - successWidth) / 2
+	b.WriteString(strings.Repeat(" ", max(0, successPad)))
+	b.WriteString(passedStyle.Render(successMsg))
+	b.WriteString("\n\n")
+
+	// Final stats
+	b.WriteString(headerStyle.Render("◈ Final Stats"))
+	b.WriteString("\n")
+	statsContent := m.renderFinalStats()
+	b.WriteString(lipgloss.NewStyle().Width(contentWidth).Render(boxStyle.Render(statsContent)))
+	b.WriteString("\n\n")
+
+	// All commits (expanded)
+	if len(m.status.Commits) > 0 {
+		b.WriteString(headerStyle.Render("◈ Commits Made"))
+		b.WriteString("\n")
+		commitsContent := m.renderCommitsExpanded()
+		b.WriteString(lipgloss.NewStyle().Width(contentWidth).Render(boxStyle.Render(commitsContent)))
+		b.WriteString("\n\n")
+	}
+
+	// Gates summary (compact)
+	b.WriteString(headerStyle.Render("◈ Gates (All Passed)"))
+	b.WriteString("\n")
+	gatesContent := m.renderGatesCompact()
+	b.WriteString(lipgloss.NewStyle().Width(contentWidth).Render(boxStyle.Render(gatesContent)))
+	b.WriteString("\n")
+
+	b.WriteString(m.renderCommonFooter("", "✓ Complete", passedStyle))
+
+	return b.String()
+}
+
+// renderImplementLeftColumn renders left column for implement phase
+func (m model) renderImplementLeftColumn() string {
+	var b strings.Builder
+
+	// Active Agent (if running)
+	if m.status.ActiveAgent != nil {
+		b.WriteString(headerStyle.Render("◈ Active Agent"))
+		b.WriteString("\n")
+		agentContent := m.renderActiveAgent()
+		b.WriteString(activeBoxStyle.Render(agentContent))
+		b.WriteString("\n\n")
+	}
+
+	// Session Info
+	b.WriteString(headerStyle.Render("◈ Session"))
+	b.WriteString("\n")
+	sessionContent := m.renderSessionInfo()
+	b.WriteString(boxStyle.Render(sessionContent))
+	b.WriteString("\n\n")
+
+	// Current Task (if any)
+	if m.status.CurrentTask.Name != "" {
+		b.WriteString(headerStyle.Render("◈ Active Task"))
+		b.WriteString("\n")
+		taskContent := m.renderCurrentTask()
+		style := boxStyle
+		if m.status.CurrentTask.Status == "in_progress" {
+			style = activeBoxStyle
+		}
+		b.WriteString(style.Render(taskContent))
+		b.WriteString("\n\n")
+	}
+
+	// Chunks (if defined)
+	if len(m.status.Chunks) > 0 {
+		b.WriteString(headerStyle.Render("◈ Chunks"))
+		b.WriteString("\n")
+		chunksContent := m.renderChunks()
+		b.WriteString(boxStyle.Render(chunksContent))
 	}
 
 	return b.String()
+}
+
+// renderImplementRightColumn renders right column for implement phase
+func (m model) renderImplementRightColumn() string {
+	var b strings.Builder
+
+	// Gates (always show in implement)
+	b.WriteString(headerStyle.Render("◈ Gates"))
+	b.WriteString("\n")
+	gatesContent := m.renderGates()
+	b.WriteString(boxStyle.Render(gatesContent))
+	b.WriteString("\n\n")
+
+	// Agents
+	b.WriteString(headerStyle.Render("◈ Agents"))
+	b.WriteString("\n")
+	agentsContent := m.renderAgents()
+	b.WriteString(boxStyle.Render(agentsContent))
+	b.WriteString("\n\n")
+
+	// Commits (if any)
+	if len(m.status.Commits) > 0 {
+		b.WriteString(headerStyle.Render("◈ Commits"))
+		b.WriteString("\n")
+		commitsContent := m.renderCommits()
+		b.WriteString(boxStyle.Render(commitsContent))
+	}
+
+	return b.String()
+}
+
+// renderMinimalSessionInfo shows just elapsed time for plan phase
+func (m model) renderMinimalSessionInfo() string {
+	s := m.status
+	var lines []string
+
+	if !s.Session.StartTime.IsZero() {
+		elapsed := time.Since(s.Session.StartTime).Round(time.Second)
+		lines = append(lines, fmt.Sprintf("ELAPSED: %s", textStyle.Render(elapsed.String())))
+	}
+
+	if s.Session.StartCommit != "" && len(s.Session.StartCommit) >= 7 {
+		lines = append(lines, fmt.Sprintf("BASE: %s", dimStyle.Render(s.Session.StartCommit[:7])))
+	}
+
+	if len(lines) == 0 {
+		return dimStyle.Render("Session starting...")
+	}
+
+	return strings.Join(lines, "    ")
+}
+
+// renderPlanRequirements shows plan requirements during planning
+func (m model) renderPlanRequirements() string {
+	p := m.status.Plan
+	var lines []string
+
+	if len(p.MustHave) > 0 {
+		lines = append(lines, textStyle.Render("Must Have:"))
+		for _, r := range p.MustHave {
+			lines = append(lines, fmt.Sprintf("  • %s", r))
+		}
+	}
+
+	if len(p.ShouldHave) > 0 {
+		if len(lines) > 0 {
+			lines = append(lines, "")
+		}
+		lines = append(lines, textStyle.Render("Should Have:"))
+		for _, r := range p.ShouldHave {
+			lines = append(lines, fmt.Sprintf("  • %s", dimStyle.Render(r)))
+		}
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// renderGatesExpanded shows gates with more detail for review phase
+func (m model) renderGatesExpanded() string {
+	g := m.status.Gates
+	fc := m.status.GateFailureCounts
+
+	gates := []struct {
+		name      string
+		result    GateResult
+		failCount int
+	}{
+		{"TEST", g.Test, fc.Test},
+		{"LINT", g.Lint, fc.Lint},
+		{"TYPECHECK", g.TypeCheck, fc.TypeCheck},
+		{"BUILD", g.Build, fc.Build},
+		{"FORMAT", g.Format, fc.Format},
+	}
+
+	var lines []string
+	for _, gate := range gates {
+		icon := gateIcon(gate.result.Status)
+		cmd := gate.result.Command
+		if cmd == "" {
+			cmd = "---"
+		}
+		if len(cmd) > 25 {
+			cmd = cmd[:22] + "..."
+		}
+
+		var line string
+		status := fmt.Sprintf("%-9s", gate.name)
+
+		switch gate.result.Status {
+		case "passed":
+			line = fmt.Sprintf("%s %s %s", passedStyle.Render(icon), passedStyle.Render(status), dimStyle.Render(cmd))
+		case "failed":
+			line = fmt.Sprintf("%s %s %s", failedStyle.Render(icon), failedStyle.Render(status), dimStyle.Render(cmd))
+		case "running":
+			blink := blinkFrames[m.frame]
+			line = fmt.Sprintf("%s %s %s %s", runningStyle.Render(icon), runningStyle.Render(status), dimStyle.Render(cmd), runningStyle.Render(blink))
+		default:
+			line = fmt.Sprintf("%s %s %s", dimStyle.Render(icon), dimStyle.Render(status), dimStyle.Render(cmd))
+		}
+
+		if gate.failCount > 0 {
+			line += failedStyle.Render(fmt.Sprintf(" [%d fails]", gate.failCount))
+		}
+
+		lines = append(lines, line)
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// renderAgentsCompact shows agent status in compact form
+func (m model) renderAgentsCompact() string {
+	agents := m.status.Agents
+	if len(agents) == 0 {
+		return dimStyle.Render("No agents have run yet")
+	}
+
+	var lines []string
+	for _, a := range agents {
+		icon := "[ ]"
+		style := dimStyle
+		if a.Status == "done" {
+			icon = "[X]"
+			style = passedStyle
+		} else if a.Status == "active" {
+			icon = "[" + blinkFrames[m.frame] + "]"
+			style = runningStyle
+		}
+
+		line := style.Render(fmt.Sprintf("%s %-15s", icon, a.Name))
+
+		if a.Blockers > 0 {
+			line += failedStyle.Render(fmt.Sprintf(" %dB", a.Blockers))
+		}
+		if a.Warnings > 0 {
+			line += runningStyle.Render(fmt.Sprintf(" %dW", a.Warnings))
+		}
+
+		lines = append(lines, line)
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// renderSessionSummary shows compact session summary for review
+func (m model) renderSessionSummary() string {
+	s := m.status
+	var parts []string
+
+	parts = append(parts, fmt.Sprintf("CHUNKS: %s", textStyle.Render(fmt.Sprintf("%d/%d", s.Stats.ChunksCompleted, s.Stats.ChunksTotal))))
+	parts = append(parts, fmt.Sprintf("COMMITS: %s", textStyle.Render(fmt.Sprintf("%d", s.Stats.CommitsMade))))
+
+	if !s.Session.StartTime.IsZero() {
+		elapsed := time.Since(s.Session.StartTime).Round(time.Second)
+		parts = append(parts, fmt.Sprintf("ELAPSED: %s", textStyle.Render(elapsed.String())))
+	}
+
+	return strings.Join(parts, "    ")
+}
+
+// renderFinalStats shows final stats for complete phase
+func (m model) renderFinalStats() string {
+	s := m.status
+	var lines []string
+
+	lines = append(lines, fmt.Sprintf("PHASE: %s", passedStyle.Render("✓ Complete")))
+
+	if !s.Session.StartTime.IsZero() {
+		elapsed := time.Since(s.Session.StartTime).Round(time.Second)
+		lines = append(lines, fmt.Sprintf("ELAPSED: %s", textStyle.Render(elapsed.String())))
+	}
+
+	lines = append(lines, fmt.Sprintf("CHUNKS: %s completed", passedStyle.Render(fmt.Sprintf("%d/%d", s.Stats.ChunksCompleted, s.Stats.ChunksTotal))))
+	lines = append(lines, fmt.Sprintf("COMMITS: %s made", passedStyle.Render(fmt.Sprintf("%d", s.Stats.CommitsMade))))
+	lines = append(lines, fmt.Sprintf("GATES: %s passed", passedStyle.Render(fmt.Sprintf("%d/%d", s.Stats.GatesPassed, s.Stats.GatesPassed+s.Stats.GatesFailed))))
+
+	return strings.Join(lines, "\n")
+}
+
+// renderCommitsExpanded shows all commits for complete phase
+func (m model) renderCommitsExpanded() string {
+	commits := m.status.Commits
+	if len(commits) == 0 {
+		return dimStyle.Render("< NO COMMITS >")
+	}
+
+	var lines []string
+	// Show up to 10 commits in complete view
+	maxShow := 10
+	start := 0
+	if len(commits) > maxShow {
+		start = len(commits) - maxShow
+		lines = append(lines, dimStyle.Render(fmt.Sprintf("... and %d earlier commits", start)))
+	}
+
+	for _, c := range commits[start:] {
+		hash := c.Hash
+		if len(hash) > 7 {
+			hash = hash[:7]
+		}
+		msg := c.Message
+		if len(msg) > 45 {
+			msg = msg[:42] + "..."
+		}
+		line := fmt.Sprintf("%s %s", passedStyle.Render(hash), textStyle.Render(msg))
+		lines = append(lines, line)
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// renderGatesCompact shows gates in single line for complete phase
+func (m model) renderGatesCompact() string {
+	g := m.status.Gates
+
+	gates := []struct {
+		name   string
+		status string
+	}{
+		{"TEST", g.Test.Status},
+		{"LINT", g.Lint.Status},
+		{"TYPECHECK", g.TypeCheck.Status},
+		{"BUILD", g.Build.Status},
+		{"FORMAT", g.Format.Status},
+	}
+
+	var parts []string
+	for _, gate := range gates {
+		if gate.status == "passed" {
+			parts = append(parts, passedStyle.Render(fmt.Sprintf("✓ %s", gate.name)))
+		} else if gate.status == "skipped" || gate.status == "pending" {
+			parts = append(parts, dimStyle.Render(fmt.Sprintf("− %s", gate.name)))
+		} else {
+			parts = append(parts, failedStyle.Render(fmt.Sprintf("✗ %s", gate.name)))
+		}
+	}
+
+	return strings.Join(parts, "  ")
+}
+
+// allGatesPassed checks if all required gates passed
+func (m model) allGatesPassed() bool {
+	g := m.status.Gates
+
+	// Required gates must not be failed or running
+	requiredGates := []GateResult{g.Test, g.Lint}
+	for _, gate := range requiredGates {
+		if gate.Status == "failed" || gate.Status == "running" {
+			return false
+		}
+	}
+
+	// Optional gates only fail if explicitly failed
+	optionalGates := []GateResult{g.TypeCheck, g.Build, g.Format}
+	for _, gate := range optionalGates {
+		if gate.Status == "failed" {
+			return false
+		}
+	}
+	return true
 }
 
 // renderStopBanner shows the stop condition prominently
@@ -262,71 +797,6 @@ func (m model) renderStopBanner() string {
 	}
 
 	return strings.Repeat(" ", leftPad) + banner
-}
-
-func (m model) renderLeftColumn() string {
-	var b strings.Builder
-
-	// Active Agent (if running)
-	if m.status.ActiveAgent != nil {
-		b.WriteString(headerStyle.Render("◈ Active Agent"))
-		b.WriteString("\n")
-		agentContent := m.renderActiveAgent()
-		b.WriteString(activeBoxStyle.Render(agentContent))
-		b.WriteString("\n\n")
-	}
-
-	// Session Info
-	b.WriteString(headerStyle.Render("◈ Session"))
-	b.WriteString("\n")
-	sessionContent := m.renderSessionInfo()
-	b.WriteString(boxStyle.Render(sessionContent))
-	b.WriteString("\n\n")
-
-	// Current Task
-	b.WriteString(headerStyle.Render("◈ Active Task"))
-	b.WriteString("\n")
-	taskContent := m.renderCurrentTask()
-	style := boxStyle
-	if m.status.CurrentTask.Status == "in_progress" {
-		style = activeBoxStyle
-	}
-	b.WriteString(style.Render(taskContent))
-	b.WriteString("\n\n")
-
-	// Chunks
-	b.WriteString(headerStyle.Render("◈ Chunks"))
-	b.WriteString("\n")
-	chunksContent := m.renderChunks()
-	b.WriteString(boxStyle.Render(chunksContent))
-
-	return b.String()
-}
-
-func (m model) renderRightColumn() string {
-	var b strings.Builder
-
-	// Gates
-	b.WriteString(headerStyle.Render("◈ Gates"))
-	b.WriteString("\n")
-	gatesContent := m.renderGates()
-	b.WriteString(boxStyle.Render(gatesContent))
-	b.WriteString("\n\n")
-
-	// Agents
-	b.WriteString(headerStyle.Render("◈ Agents"))
-	b.WriteString("\n")
-	agentsContent := m.renderAgents()
-	b.WriteString(boxStyle.Render(agentsContent))
-	b.WriteString("\n\n")
-
-	// Commits
-	b.WriteString(headerStyle.Render("◈ Commits"))
-	b.WriteString("\n")
-	commitsContent := m.renderCommits()
-	b.WriteString(boxStyle.Render(commitsContent))
-
-	return b.String()
 }
 
 // renderActiveAgent shows the currently running agent
