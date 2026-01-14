@@ -28,6 +28,17 @@ To run manually:
 ./tui/wiggum-tui
 ```
 
+### Choosing Your Terminal
+
+Set your preferred terminal emulator:
+```bash
+export WIGGUM_TERMINAL=ghostty  # or: iterm, kitty, alacritty, warp, terminal
+```
+
+Supported terminals (auto-detected in this order if not set):
+- **macOS**: Ghostty, iTerm2, Kitty, Alacritty, Warp, Terminal.app
+- **Linux**: Kitty, Alacritty, gnome-terminal, xterm
+
 ### Disabling Auto-Launch
 
 If you prefer to not have the TUI auto-launch:
