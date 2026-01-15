@@ -112,7 +112,7 @@ Settings are merged, with local taking precedence.
 
 ## Stack Presets
 
-Stack-specific presets (in `stacks/*/settings.json`) add language-appropriate permissions:
+Stack-specific presets (in `stacks/*/stack-settings.json`) add language-appropriate permissions. These are merged with `core-settings.json` during setup:
 
 **TypeScript:**
 ```json

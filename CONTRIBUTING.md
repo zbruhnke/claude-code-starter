@@ -57,7 +57,7 @@ done
 
 ```bash
 # Validate JSON syntax
-for f in .claude/settings.json stacks/*/settings.json; do
+for f in .claude/core-settings.json stacks/*/stack-settings.json; do
   jq . "$f" > /dev/null
 done
 ```

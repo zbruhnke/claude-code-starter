@@ -200,9 +200,18 @@ cd your-project
 ### Download a specific release
 
 ```bash
-curl -fsSL https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/<version>.tar.gz | tar -xz
+# Download and verify (recommended)
+VERSION="v0.8.3"  # Check releases for latest
+curl -fsSL "https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/${VERSION}.tar.gz" -o claude-code-starter.tar.gz
+curl -fsSL "https://github.com/zbruhnke/claude-code-starter/releases/download/${VERSION}/checksums.txt" -o checksums.txt
+
+# Verify checksum before extracting
+grep "release.tar.gz" checksums.txt | sed "s/release.tar.gz/claude-code-starter.tar.gz/" | sha256sum -c -
+
+# Extract and run
+tar -xzf claude-code-starter.tar.gz
 cd your-project
-~/claude-code-starter-0.4.0/setup.sh
+~/claude-code-starter-${VERSION#v}/setup.sh
 ```
 
 ### Copy files manually
@@ -213,9 +222,10 @@ cp CLAUDE.template.md your-project/CLAUDE.md
 cp .claudeignore your-project/
 cp -r .claude your-project/
 
-# Stack-specific preset
+# Stack-specific preset (requires jq for settings merge)
 cp stacks/typescript/CLAUDE.md your-project/CLAUDE.md
-cp stacks/typescript/settings.json your-project/.claude/
+jq -s '.[0] as $core | .[1] as $stack | {permissions: {allow: ($core.permissions.allow + $stack.permissions.allow), deny: ($core.permissions.deny + $stack.permissions.deny)}, hooks: $core.hooks}' \
+  .claude/core-settings.json stacks/typescript/stack-settings.json > your-project/.claude/settings.json
 ```
 
 > **Note**: Stack templates contain `{{PLACEHOLDER}}` variables. Manual copies require replacing these yourself.
@@ -664,7 +674,7 @@ PRs welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 **Quick quality check:**
 ```bash
 shellcheck --severity=warning setup.sh adopt.sh install.sh review-mr.sh bin/claude-code-starter lib/common.sh .claude/hooks/*.sh
-for f in .claude/settings.json stacks/*/settings.json; do jq . "$f" > /dev/null; done
+for f in .claude/core-settings.json stacks/*/stack-settings.json; do jq . "$f" > /dev/null; done
 ```
 
 ---
