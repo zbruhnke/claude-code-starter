@@ -1,0 +1,23 @@
+{
+  "_comment": "Stack-specific additions - merged with core-settings.json at install time",
+  "permissions": {
+    "allow": [
+      "Bash(cargo:*)",
+      "Bash(cargo run:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo doc:*)",
+      "Bash(cargo add:*)",
+      "Bash(cargo remove:*)",
+      "Bash(rustfmt:*)",
+      "Bash(rustc:*)",
+      "Bash(make:*)"
+    ],
+    "deny": []
+  },
+  "env": {
+    "RUST_BACKTRACE": "1"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "_comment": "Stack-specific additions - merged with core-settings.json at install time",
+  "permissions": {
+    "allow": [
+      "Bash(ruby:*)",
+      "Bash(bundle:*)",
+      "Bash(bundle exec:*)",
+      "Bash(rails:*)",
+      "Bash(rake:*)",
+      "Bash(rspec:*)",
+      "Bash(rubocop:*)",
+      "Bash(gem:*)",
+      "Bash(irb:*)",
+      "Bash(pry:*)",
+      "Bash(sidekiq:*)",
+      "Bash(foreman:*)"
+    ],
+    "deny": [
+      "Read(config/credentials.yml.enc)",
+      "Read(config/master.key)",
+      "Edit(config/master.key)"
+    ]
+  },
+  "env": {
+    "RAILS_ENV": "development"
+  }
+}

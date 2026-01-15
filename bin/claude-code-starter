@@ -52,6 +52,16 @@ else
   RED='' GREEN='' YELLOW='' BLUE='' NC=''
 fi
 
+# Helper to extract tag_name from GitHub API JSON (jq preferred, grep/sed fallback)
+parse_tag_name() {
+  local json="$1"
+  if command -v jq >/dev/null 2>&1; then
+    echo "$json" | jq -r '.tag_name // empty' 2>/dev/null
+  else
+    echo "$json" | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/'
+  fi
+}
+
 print_help() {
   cat << 'EOF'
 claude-code-starter (ccs) - Production-ready Claude Code configuration
@@ -120,7 +130,7 @@ cmd_update() {
   release_json=$(curl -fsSL "https://api.github.com/repos/zbruhnke/claude-code-starter/releases/latest" 2>/dev/null)
 
   local latest
-  latest=$(echo "$release_json" | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
+  latest=$(parse_tag_name "$release_json")
 
   if [ -z "$latest" ]; then
     echo -e "${RED}Error: Could not fetch latest version from GitHub${NC}" >&2

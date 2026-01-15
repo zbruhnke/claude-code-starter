@@ -1,0 +1,21 @@
+{
+  "_comment": "Stack-specific additions - merged with core-settings.json at install time",
+  "permissions": {
+    "allow": [
+      "Bash(go:*)",
+      "Bash(go run:*)",
+      "Bash(go test:*)",
+      "Bash(go build:*)",
+      "Bash(go mod:*)",
+      "Bash(go get:*)",
+      "Bash(go fmt:*)",
+      "Bash(go vet:*)",
+      "Bash(golangci-lint:*)",
+      "Bash(make:*)"
+    ],
+    "deny": []
+  },
+  "env": {
+    "CGO_ENABLED": "0"
+  }
+}

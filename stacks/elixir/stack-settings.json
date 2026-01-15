@@ -1,0 +1,28 @@
+{
+  "_comment": "Stack-specific additions - merged with core-settings.json at install time",
+  "permissions": {
+    "allow": [
+      "Bash(mix:*)",
+      "Bash(mix test:*)",
+      "Bash(mix compile:*)",
+      "Bash(mix deps.*)",
+      "Bash(mix format:*)",
+      "Bash(mix phx.*)",
+      "Bash(mix ecto.*)",
+      "Bash(mix event_store.*)",
+      "Bash(mix commanded.*)",
+      "Bash(mix credo:*)",
+      "Bash(mix dialyzer:*)",
+      "Bash(iex:*)",
+      "Bash(elixir:*)",
+      "Bash(elixirc:*)"
+    ],
+    "deny": [
+      "Read(config/prod.secret.exs)",
+      "Edit(config/prod.secret.exs)"
+    ]
+  },
+  "env": {
+    "MIX_ENV": "dev"
+  }
+}

@@ -346,16 +346,51 @@ fi
 track_file "$TARGET_DIR/CLAUDE.md"
 print_success "Created CLAUDE.md"
 
-# Copy stack-specific settings.json
+# Generate settings.json by merging core + stack settings
 print_info "Creating .claude/settings.json..."
 
-if [ -f "$SCRIPT_DIR/stacks/$STACK/settings.json" ]; then
-  cp "$SCRIPT_DIR/stacks/$STACK/settings.json" "$TARGET_DIR/.claude/settings.json"
-elif [ -f "$SCRIPT_DIR/.claude/settings.json" ]; then
-  cp "$SCRIPT_DIR/.claude/settings.json" "$TARGET_DIR/.claude/settings.json"
+CORE_SETTINGS="$SCRIPT_DIR/.claude/core-settings.json"
+STACK_SETTINGS="$SCRIPT_DIR/stacks/$STACK/stack-settings.json"
+
+if [ -f "$CORE_SETTINGS" ]; then
+  if command -v jq &> /dev/null && [ -f "$STACK_SETTINGS" ]; then
+    # Merge core + stack settings using jq
+    # - Concatenate allow arrays (core + stack-specific)
+    # - Concatenate deny arrays (core + stack-specific)
+    # - Merge env objects (stack overrides core)
+    # - Keep hooks from core (all stacks share the same hooks)
+    jq -s '
+      .[0] as $core | .[1] as $stack |
+      {
+        permissions: {
+          allow: ($core.permissions.allow + $stack.permissions.allow),
+          deny: ($core.permissions.deny + $stack.permissions.deny)
+        },
+        hooks: $core.hooks,
+        env: (($core.env // {}) + ($stack.env // {}))
+      } | if .env == {} then del(.env) else . end
+    ' "$CORE_SETTINGS" "$STACK_SETTINGS" > "$TARGET_DIR/.claude/settings.json"
+    print_success "Created .claude/settings.json (merged core + $STACK)"
+  else
+    # No jq or no stack settings - use core settings directly
+    cp "$CORE_SETTINGS" "$TARGET_DIR/.claude/settings.json"
+    if [ ! -f "$STACK_SETTINGS" ]; then
+      print_success "Created .claude/settings.json (core settings)"
+    else
+      print_warning "jq not found - using core settings (install jq for stack-specific permissions)"
+    fi
+  fi
+else
+  # Fallback: copy legacy stack settings.json if it exists
+  if [ -f "$SCRIPT_DIR/stacks/$STACK/settings.json" ]; then
+    cp "$SCRIPT_DIR/stacks/$STACK/settings.json" "$TARGET_DIR/.claude/settings.json"
+    print_success "Created .claude/settings.json ($STACK preset)"
+  elif [ -f "$SCRIPT_DIR/.claude/settings.json" ]; then
+    cp "$SCRIPT_DIR/.claude/settings.json" "$TARGET_DIR/.claude/settings.json"
+    print_success "Created .claude/settings.json (default)"
+  fi
 fi
 track_file "$TARGET_DIR/.claude/settings.json"
-print_success "Created .claude/settings.json ($STACK preset)"
 
 # Create or update .claudeignore
 if [ ! -f "$TARGET_DIR/.claudeignore" ]; then
@@ -400,34 +435,57 @@ fi
 # Copy rules
 if [ "$INSTALL_RULES" = true ]; then
   print_info "Installing rules..."
-  cp -r "$SCRIPT_DIR/.claude/rules/"* "$TARGET_DIR/.claude/rules/" 2>/dev/null || true
-  # Add stack-specific rules
-  if [ -f "$SCRIPT_DIR/stacks/$STACK/rules.md" ]; then
-    cp "$SCRIPT_DIR/stacks/$STACK/rules.md" "$TARGET_DIR/.claude/rules/${STACK}.md"
+  RULES_SRC="$SCRIPT_DIR/.claude/rules"
+  if [ -d "$RULES_SRC" ] && [ -n "$(ls -A "$RULES_SRC" 2>/dev/null)" ]; then
+    cp -r "$RULES_SRC/"* "$TARGET_DIR/.claude/rules/"
+    # Add stack-specific rules
+    if [ -f "$SCRIPT_DIR/stacks/$STACK/rules.md" ]; then
+      cp "$SCRIPT_DIR/stacks/$STACK/rules.md" "$TARGET_DIR/.claude/rules/${STACK}.md"
+    fi
+    print_success "Installed rules (including $STACK-specific)"
+  else
+    print_warning "No rules found in starter repo"
   fi
-  print_success "Installed rules (including $STACK-specific)"
 fi
 
 # Copy skills
 if [ "$INSTALL_SKILLS" = true ]; then
   print_info "Installing skills..."
-  cp -r "$SCRIPT_DIR/.claude/skills/"* "$TARGET_DIR/.claude/skills/" 2>/dev/null || true
-  print_success "Installed skills"
+  SKILLS_SRC="$SCRIPT_DIR/.claude/skills"
+  if [ -d "$SKILLS_SRC" ] && [ -n "$(ls -A "$SKILLS_SRC" 2>/dev/null)" ]; then
+    cp -r "$SKILLS_SRC/"* "$TARGET_DIR/.claude/skills/"
+    print_success "Installed skills"
+  else
+    print_warning "No skills found in starter repo"
+  fi
 fi
 
 # Copy agents
 if [ "$INSTALL_AGENTS" = true ]; then
   print_info "Installing agents..."
-  cp -r "$SCRIPT_DIR/.claude/agents/"* "$TARGET_DIR/.claude/agents/" 2>/dev/null || true
-  print_success "Installed agents"
+  AGENTS_SRC="$SCRIPT_DIR/.claude/agents"
+  if [ -d "$AGENTS_SRC" ] && [ -n "$(ls -A "$AGENTS_SRC" 2>/dev/null)" ]; then
+    cp -r "$AGENTS_SRC/"* "$TARGET_DIR/.claude/agents/"
+    print_success "Installed agents"
+  else
+    print_warning "No agents found in starter repo"
+  fi
 fi
 
 # Copy hooks
 if [ "$INSTALL_HOOKS" = true ]; then
   print_info "Installing security hooks..."
-  cp -r "$SCRIPT_DIR/.claude/hooks/"* "$TARGET_DIR/.claude/hooks/" 2>/dev/null || true
-  chmod +x "$TARGET_DIR/.claude/hooks/"*.sh 2>/dev/null || true
-  print_success "Installed security hooks"
+  HOOKS_SRC="$SCRIPT_DIR/.claude/hooks"
+  if [ -d "$HOOKS_SRC" ] && [ -n "$(ls -A "$HOOKS_SRC" 2>/dev/null)" ]; then
+    cp -r "$HOOKS_SRC/"* "$TARGET_DIR/.claude/hooks/"
+    # Make shell scripts executable
+    for hook in "$TARGET_DIR/.claude/hooks/"*.sh; do
+      [ -f "$hook" ] && chmod +x "$hook"
+    done
+    print_success "Installed security hooks"
+  else
+    print_warning "No hooks found in starter repo"
+  fi
 fi
 
 # Create MCP template

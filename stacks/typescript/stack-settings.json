@@ -1,0 +1,25 @@
+{
+  "_comment": "Stack-specific additions - merged with core-settings.json at install time",
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)",
+      "Bash(npm ci)",
+      "Bash(npm exec:*)",
+      "Bash(npx:*)",
+      "Bash(yarn:*)",
+      "Bash(pnpm:*)",
+      "Bash(tsc:*)",
+      "Bash(eslint:*)",
+      "Bash(prettier:*)",
+      "Bash(jest:*)",
+      "Bash(vitest:*)",
+      "Bash(node:*)"
+    ],
+    "deny": []
+  },
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

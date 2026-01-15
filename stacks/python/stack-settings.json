@@ -1,0 +1,31 @@
+{
+  "_comment": "Stack-specific additions - merged with core-settings.json at install time",
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(pip:*)",
+      "Bash(pip3:*)",
+      "Bash(poetry:*)",
+      "Bash(pdm:*)",
+      "Bash(uv:*)",
+      "Bash(pytest:*)",
+      "Bash(mypy:*)",
+      "Bash(pyright:*)",
+      "Bash(ruff:*)",
+      "Bash(black:*)",
+      "Bash(flake8:*)",
+      "Bash(isort:*)",
+      "Bash(uvicorn:*)",
+      "Bash(gunicorn:*)",
+      "Bash(flask:*)",
+      "Bash(django-admin:*)",
+      "Bash(alembic:*)"
+    ],
+    "deny": []
+  },
+  "env": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1"
+  }
+}

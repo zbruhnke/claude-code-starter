@@ -88,10 +88,21 @@ done
 command -v curl >/dev/null 2>&1 || error "curl is required but not installed"
 command -v tar >/dev/null 2>&1 || error "tar is required but not installed"
 
+# Helper to extract tag_name from GitHub API JSON (jq preferred, grep/sed fallback)
+parse_tag_name() {
+  local json="$1"
+  if command -v jq >/dev/null 2>&1; then
+    echo "$json" | jq -r '.tag_name // empty' 2>/dev/null
+  else
+    echo "$json" | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/'
+  fi
+}
+
 # Get latest version if not specified
 if [ -z "$VERSION" ]; then
   info "Fetching latest version..."
-  VERSION=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
+  release_json=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" 2>/dev/null)
+  VERSION=$(parse_tag_name "$release_json")
   if [ -z "$VERSION" ]; then
     error "Could not determine latest version. Try specifying --version"
   fi
@@ -193,7 +204,10 @@ echo "$VERSION" > "$INSTALL_DIR/VERSION"
 chmod +x "$INSTALL_DIR/bin/claude-code-starter"
 chmod +x "$INSTALL_DIR/setup.sh"
 chmod +x "$INSTALL_DIR/adopt.sh"
-chmod +x "$INSTALL_DIR/.claude/hooks/"*.sh 2>/dev/null || true
+# Make hook scripts executable
+for hook in "$INSTALL_DIR/.claude/hooks/"*.sh; do
+  [ -f "$hook" ] && chmod +x "$hook"
+done
 
 # Create short alias symlink
 ln -sf "$INSTALL_DIR/bin/claude-code-starter" "$INSTALL_DIR/bin/ccs"
