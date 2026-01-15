@@ -553,7 +553,7 @@ The setup script includes presets for common stacks:
 | **Elixir** | mix test, credo, format, Commanded/CQRS patterns |
 
 Each preset includes:
-- Appropriate `settings.json` permissions
+- `stack-settings.json` permissions (merged with `core-settings.json` during setup)
 - Stack-specific CLAUDE.md template
 - Relevant rules and patterns
 - Auto-format hook for that language
