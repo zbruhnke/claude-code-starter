@@ -197,8 +197,8 @@ install_security() {
     echo ""
     echo -e "  ${DIM}See docs/permissions.md for additional patterns (*.pem, *.key, etc.)${NC}"
   else
-    cp "$SCRIPT_DIR/.claude/settings.json" "$TARGET_DIR/.claude/settings.json"
-    print_success "Created settings.json with security defaults"
+    cp "$SCRIPT_DIR/.claude/core-settings.json" "$TARGET_DIR/.claude/settings.json"
+    print_success "Created settings.json with security defaults (from core-settings.json)"
   fi
 
   # Install security rules
