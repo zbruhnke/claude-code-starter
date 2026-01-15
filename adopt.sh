@@ -222,7 +222,7 @@ install_stack() {
   echo "    6) Elixir"
   echo ""
 
-  read -r -p "  Select stack [1-6]: " choice
+  _read_input -r -p "  Select stack [1-6]: " choice
 
   case $choice in
     1) STACK="typescript" ;;
@@ -247,7 +247,7 @@ install_stack() {
   if [ -f "$SCRIPT_DIR/stacks/$STACK/settings.json" ]; then
     if [ -f "$TARGET_DIR/.claude/settings.json" ]; then
       echo ""
-      read -r -p "  Replace settings.json with $STACK preset? [y/N]: " replace
+      _read_input -r -p "  Replace settings.json with $STACK preset? [y/N]: " replace
       if [[ "$replace" =~ ^[Yy] ]]; then
         cp "$SCRIPT_DIR/stacks/$STACK/settings.json" "$TARGET_DIR/.claude/settings.json"
         print_success "Replaced settings.json with $STACK preset"
@@ -355,7 +355,7 @@ interactive_mode() {
   echo "    q) Quit"
   echo ""
 
-  read -r -p "  Select option: " choice
+  _read_input -r -p "  Select option: " choice
   echo ""
 
   case $choice in
@@ -373,7 +373,7 @@ interactive_mode() {
       install_rules
       install_security
       echo ""
-      read -r -p "  Also install pre-commit review hook? [y/N]: " precommit
+      _read_input -r -p "  Also install pre-commit review hook? [y/N]: " precommit
       [[ "$precommit" =~ ^[Yy] ]] && install_precommit
       ;;
     s|S)
@@ -382,7 +382,7 @@ interactive_mode() {
         echo "  - $(basename "$skill_dir")"
       done
       echo ""
-      read -r -p "  Skill name: " skill_name
+      _read_input -r -p "  Skill name: " skill_name
       install_single_skill "$skill_name"
       ;;
     a|A)
@@ -391,7 +391,7 @@ interactive_mode() {
         echo "  - $(basename "$agent" .md)"
       done
       echo ""
-      read -r -p "  Agent name: " agent_name
+      _read_input -r -p "  Agent name: " agent_name
       install_single_agent "$agent_name"
       ;;
     q|Q) exit 0 ;;

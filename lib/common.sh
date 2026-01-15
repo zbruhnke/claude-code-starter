@@ -38,11 +38,19 @@ print_step() { echo -e "\n${BOLD}$1${NC}\n"; }
 # String utilities
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Escape special characters for sed replacement
-# Handles: / & | \ [ ] * . ^ $ and newlines
+# Escape special characters for sed replacement (single-line only)
+# Handles: \ & and the | delimiter
 # Usage: sed "s|pattern|$(sed_escape "$value")|g"
+# NOTE: Rejects multi-line input - use a different approach for multi-line values
 sed_escape() {
-  printf '%s' "$1" | sed -e 's/[\/&|\\[\]*.$^]/\\&/g' -e 's/$/\\/' -e '$s/\\$//'
+  local value="$1"
+  # Reject newlines - this function is single-line only
+  if [[ "$value" == *$'\n'* ]]; then
+    echo "sed_escape: multi-line input not supported" >&2
+    return 1
+  fi
+  # Escape backslash first, then & and delimiter |
+  printf '%s' "$value" | sed -e 's/\\/\\\\/g' -e 's/&/\\&/g' -e 's/|/\\|/g'
 }
 
 # Normalize user input for display/templating purposes

@@ -7,7 +7,7 @@
 # Exit codes: 0=success, 1=error
 #
 
-set -euo pipefail
+set -Eeuo pipefail
 
 # Script location
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -27,7 +27,7 @@ if [ -d "$TARGET_DIR/.claude" ]; then
 fi
 
 # Cleanup function for error handling
-# Note: Uses atomic operations to avoid TOCTOU vulnerabilities
+# Note: Does basic path validation but cannot fully prevent race conditions
 cleanup_on_error() {
   if [ "$SETUP_COMPLETE" = true ]; then
     return
@@ -36,10 +36,9 @@ cleanup_on_error() {
   echo ""
   echo -e "${RED}Setup failed. Cleaning up...${NC}"
 
-  # Remove created files (rm -f handles non-existent files, no check needed)
-  # Only remove if file is within TARGET_DIR to prevent symlink attacks
+  # Remove created files
+  # Basic check that file path is under TARGET_DIR (not foolproof against races)
   for file in "${CREATED_FILES[@]}"; do
-    # Resolve to absolute path and verify it's under TARGET_DIR
     local resolved
     resolved=$(cd "$(dirname "$file")" 2>/dev/null && pwd)/$(basename "$file") || continue
     if [[ "$resolved" == "$TARGET_DIR"/* ]]; then
@@ -99,7 +98,7 @@ select_option() {
   echo ""
 
   while true; do
-    read -p "  Enter choice [1-${#options[@]}]: " choice
+    _read_input -r -p "  Enter choice [1-${#options[@]}]: " choice
     if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#options[@]}" ]; then
       SELECTED_INDEX=$((choice-1))
       return 0

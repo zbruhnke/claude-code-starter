@@ -49,6 +49,16 @@ warn() {
   echo -e "${YELLOW}Warning: $1${NC}"
 }
 
+# Read input from /dev/tty if available, otherwise stdin
+# This allows the script to work when piped
+_read_input() {
+  if [ -t 0 ]; then
+    read "$@" </dev/tty
+  else
+    read "$@"
+  fi
+}
+
 # Parse arguments
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -100,7 +110,7 @@ echo ""
 if [ -d "$INSTALL_DIR" ]; then
   existing_version=$(cat "$INSTALL_DIR/VERSION" 2>/dev/null || echo "unknown")
   echo -e "${YELLOW}Existing installation found (${existing_version})${NC}"
-  read -p "Replace it? [Y/n] " confirm
+  _read_input -r -p "Replace it? [Y/n] " confirm
   if [[ "$confirm" =~ ^[Nn] ]]; then
     echo "Aborted."
     exit 0
