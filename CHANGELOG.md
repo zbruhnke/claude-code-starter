@@ -7,8 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.7] - 2025-01-15
+
 ### Fixed
-- Remove unnecessary Bash 4.0 requirement - scripts now work with macOS default Bash 3.2
+- **jq now required for stack presets** - setup.sh exits with clear error instead of silently degrading
+- **validate-bash.sh fails hard on 8KB+ commands** - truncation could hide dangerous content
+- **adopt.sh install_security uses core-settings.json** - was incorrectly copying merged settings.json
+- Bash version requirement standardized to 3.2+ everywhere (was inconsistent 3.2/4.0)
+- CLI name standardized to `ccs` in documentation (was mixing ccs/claude-code-starter)
+- Checksum verification example uses actual tarball name (no brittle sed tricks)
+
+### Changed
+- **cleanup_on_error comments are now honest** - documents TOCTOU risk, advises against root/shared paths
+- Added heuristic caveat to permissions.md deny patterns (footgun prevention, not security boundary)
+
+### Documentation
+- Updated all references from `stacks/*/settings.json` to `stack-settings.json` + merge model
+- Fixed CONTRIBUTING.md stack preset instructions to match actual file structure
+- Added `.claude/rules/README.md` explaining rules are reference docs, not auto-loaded
+- Added `.claude/hooks/README.md` documenting all hooks including skill-eval
+
+## [0.8.5] - 2025-01-15
 
 ### Added
 - **wiggum-session-start.sh** - PreToolUse hook that AUTOMATICALLY creates `.wiggum-session` when wiggum skill is invoked
@@ -35,7 +54,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wiggum cannot claim COMPLETE without running validation script
 - Added anti-pattern: "NEVER skip the validation script"
 
-### Previously Added
+## [0.8.4] - 2025-01-14
+
+### Added
 - **release-checklist skill** for final quality gate before shipping (no TODOs, no debug code, tests passing, deps justified, security reviewed)
 - **risk-register skill** for documenting risks when changes touch auth, data, or migrations
 - **Security checklist** in code-reviewer agent covering authorization, injection, secrets, logging, and data protection
@@ -59,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Wiggum progress/completion reports now require Command Gates table with actual command output
 - Agent review is now supplementary to mechanical gates, not a replacement
 
-## [0.8.0] - 2026-01-12
+## [0.8.0] - 2025-01-12
 
 ### Added
 - **documentation-writer agent** for generating inline docs, README updates, and API documentation
