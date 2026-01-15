@@ -31,6 +31,13 @@ Before committing changes, always:
 
 This prevents "vibe coding" - blindly committing AI-generated changes without review.
 
+## Quick Commands
+
+Simple workflow commands invoked with `/<command> [arguments]`:
+- **/onboard [area]**: Quick project orientation and overview
+- **/pr-summary**: Generate PR description from current changes
+- **/status**: Check git state and recent activity
+
 ## Available Skills
 
 Skills are invoked automatically when your request matches their description:
@@ -83,6 +90,10 @@ Invoke via: `/wiggum "implement feature X per this spec..."`
 ```
 .claude/
 ├── settings.json              # Permissions, hooks
+├── commands/                  # Quick workflow commands
+│   ├── onboard.md
+│   ├── pr-summary.md
+│   └── status.md
 ├── skills/                    # Custom skills (YAML frontmatter + instructions)
 │   ├── code-review/SKILL.md
 │   ├── explain-code/SKILL.md
