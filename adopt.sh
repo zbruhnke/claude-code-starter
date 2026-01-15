@@ -213,7 +213,6 @@ install_security() {
 
 install_stack() {
   local choice=""
-  local replace=""
 
   echo ""
   echo -e "  ${BOLD}Available stacks:${NC}"
@@ -246,21 +245,61 @@ install_stack() {
     print_success "Installed ${STACK}.md rules"
   fi
 
-  # Offer to replace settings.json
-  if [ -f "$SCRIPT_DIR/stacks/$STACK/settings.json" ]; then
-    if [ -f "$TARGET_DIR/.claude/settings.json" ]; then
-      echo ""
-      _read_input -r -p "  Replace settings.json with $STACK preset? [y/N]: " replace
-      if [[ "$replace" =~ ^[Yy] ]]; then
-        cp "$SCRIPT_DIR/stacks/$STACK/settings.json" "$TARGET_DIR/.claude/settings.json"
-        print_success "Replaced settings.json with $STACK preset"
-      else
-        print_info "Kept existing settings.json"
-      fi
+  # Merge stack-specific settings into existing settings.json
+  local CORE_SETTINGS="$SCRIPT_DIR/.claude/core-settings.json"
+  local STACK_SETTINGS="$SCRIPT_DIR/stacks/$STACK/stack-settings.json"
+  local TARGET_SETTINGS="$TARGET_DIR/.claude/settings.json"
+
+  if [ ! -f "$STACK_SETTINGS" ]; then
+    print_warning "No stack-settings.json found for $STACK"
+  elif ! command -v jq &> /dev/null; then
+    print_error "jq is required to merge stack settings"
+    echo -e "  ${DIM}Install: brew install jq (macOS) or apt install jq (Debian/Ubuntu)${NC}"
+    return 1
+  else
+    mkdir -p "$TARGET_DIR/.claude"
+
+    if [ -f "$TARGET_SETTINGS" ]; then
+      # Merge stack settings into existing settings.json
+      # - Add stack-specific allow rules
+      # - Add stack-specific deny rules
+      # - Merge env vars (stack overrides existing)
+      # - Preserve existing hooks
+      print_info "Merging $STACK permissions into existing settings.json..."
+      local tmp_merged
+      tmp_merged=$(mktemp)
+      jq -s '
+        .[0] as $existing | .[1] as $stack |
+        $existing + {
+          permissions: {
+            allow: (($existing.permissions.allow // []) + $stack.permissions.allow | unique),
+            deny: (($existing.permissions.deny // []) + $stack.permissions.deny | unique)
+          },
+          env: (($existing.env // {}) + ($stack.env // {}))
+        } | if .env == {} then del(.env) else . end
+      ' "$TARGET_SETTINGS" "$STACK_SETTINGS" > "$tmp_merged"
+      mv "$tmp_merged" "$TARGET_SETTINGS"
+      print_success "Merged $STACK permissions into settings.json"
     else
-      mkdir -p "$TARGET_DIR/.claude"
-      cp "$SCRIPT_DIR/stacks/$STACK/settings.json" "$TARGET_DIR/.claude/settings.json"
-      print_success "Created settings.json with $STACK preset"
+      # No existing settings - merge core + stack
+      print_info "Creating settings.json with core + $STACK settings..."
+      if [ -f "$CORE_SETTINGS" ]; then
+        jq -s '
+          .[0] as $core | .[1] as $stack |
+          {
+            permissions: {
+              allow: ($core.permissions.allow + $stack.permissions.allow),
+              deny: ($core.permissions.deny + $stack.permissions.deny)
+            },
+            hooks: $core.hooks,
+            env: (($core.env // {}) + ($stack.env // {}))
+          } | if .env == {} then del(.env) else . end
+        ' "$CORE_SETTINGS" "$STACK_SETTINGS" > "$TARGET_SETTINGS"
+        print_success "Created settings.json (core + $STACK)"
+      else
+        print_error "core-settings.json not found - installation may be corrupted"
+        return 1
+      fi
     fi
   fi
 
