@@ -212,6 +212,9 @@ install_security() {
 }
 
 install_stack() {
+  local choice=""
+  local replace=""
+
   echo ""
   echo -e "  ${BOLD}Available stacks:${NC}"
   echo "    1) TypeScript"
@@ -322,6 +325,11 @@ install_single_agent() {
 # ─────────────────────────────────────────────────────────────────────────────
 
 interactive_mode() {
+  local choice=""
+  local precommit=""
+  local skill_name=""
+  local agent_name=""
+
   echo ""
   echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
   echo -e "${BLUE}  Claude Code Starter - Adopt Components${NC}"

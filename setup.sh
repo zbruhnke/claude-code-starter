@@ -89,6 +89,7 @@ select_option() {
   local prompt_text="$1"
   shift
   local options=("$@")
+  local choice=""
 
   echo -e "  ${prompt_text}"
   echo ""
