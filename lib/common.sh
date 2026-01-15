@@ -194,7 +194,7 @@ detect_version() {
 
   if command -v "$cmd" &>/dev/null; then
     local version
-    version=$("$cmd" $flag 2>/dev/null | head -1)
+    version=$("$cmd" "$flag" 2>/dev/null | head -1)
     if [ -n "$strip_prefix" ]; then
       version="${version#$strip_prefix}"
     fi

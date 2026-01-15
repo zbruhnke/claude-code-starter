@@ -382,7 +382,17 @@ else
   if [ ! -f "$STACK_SETTINGS" ]; then
     print_success "Created .claude/settings.json (core settings)"
   else
-    print_warning "jq not found - using core settings (install jq for stack-specific permissions)"
+    # Make it very clear that stack permissions are missing
+    print_error "jq not installed - stack-specific permissions NOT applied"
+    echo ""
+    echo -e "  ${YELLOW}Your $STACK commands (npm, cargo, mix, etc.) are NOT pre-approved.${NC}"
+    echo -e "  ${YELLOW}Claude will prompt for permission on every command.${NC}"
+    echo ""
+    echo -e "  ${BOLD}To fix:${NC}"
+    echo -e "    1. Install jq: ${DIM}brew install jq${NC} (macOS) or ${DIM}apt install jq${NC} (Debian/Ubuntu)"
+    echo -e "    2. Re-run setup or: ${DIM}claude-code-starter adopt stack${NC}"
+    echo ""
+    print_warning "Continuing with core settings only"
   fi
 fi
 track_file "$TARGET_DIR/.claude/settings.json"

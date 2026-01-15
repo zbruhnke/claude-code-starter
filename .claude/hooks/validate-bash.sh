@@ -18,12 +18,20 @@ set -euo pipefail
 # Force C locale for deterministic grep character class behavior
 export LC_ALL=C
 
-# Read JSON input from stdin (cap at 8k to avoid pathological cases)
-INPUT=$(head -c 8192)
+# Read JSON input from stdin with size limit
+# Read 8193 bytes - if we get exactly that many, input was truncated
+INPUT=$(head -c 8193)
+INPUT_LEN=${#INPUT}
 
 # Validate we got input
 if [ -z "$INPUT" ]; then
   exit 0
+fi
+
+# Fail hard if input was truncated - dangerous content could be hidden at the end
+if [ "$INPUT_LEN" -ge 8193 ]; then
+  echo '{"block": true, "message": "Command too long (>8KB) - cannot safely validate"}'
+  exit 2
 fi
 
 # Require jq for reliable JSON parsing - fail closed without it
