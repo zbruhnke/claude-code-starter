@@ -10,7 +10,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 ### High-Value Contributions
 
-- **New stack presets** - Language/framework configurations with `CLAUDE.md` template, `settings.json`, and `rules.md`
+- **New stack presets** - Language/framework configurations (see "Adding a New Stack Preset" below)
 - **Useful skills** - Reusable instruction sets with clear use cases
 - **Useful agents** - Focused subagents for specific tasks
 - **Hook improvements** - Cross-platform fixes, new validation patterns
@@ -105,14 +105,34 @@ Examples:
 
 ## Adding a New Stack Preset
 
+Stack presets live in `stacks/<stack>/` and contain:
+
+```
+stacks/your-stack/
+├── stack-settings.json  # Required: permissions merged with core-settings.json
+├── CLAUDE.md            # Required: template with {{PLACEHOLDER}} variables
+└── rules.md             # Optional: stack-specific code conventions
+```
+
+### Steps
+
 1. Create directory `stacks/your-stack/`
-2. Add required files:
-   - `CLAUDE.md` - Template with `{{PLACEHOLDER}}` variables
-   - `settings.json` - Language-specific permissions
-   - `rules.md` - Code style and conventions
-3. Update `setup.sh` to include the new stack option
-4. Add to README stack table
-5. Test with a real project
+2. Add `stack-settings.json` with stack-specific permissions:
+   ```json
+   {
+     "permissions": {
+       "allow": ["Bash(your-tool:*)"],
+       "deny": []
+     }
+   }
+   ```
+3. Add `CLAUDE.md` template with `{{PLACEHOLDER}}` variables
+4. Optionally add `rules.md` for stack-specific conventions
+5. Update `setup.sh` to include the new stack in the selection menu
+6. Add to README stack table
+7. Test with a real project
+
+**Note:** `stack-settings.json` is merged with `.claude/core-settings.json` during setup. You only need to include stack-specific permissions, not the full settings structure.
 
 ### Template Variables
 
