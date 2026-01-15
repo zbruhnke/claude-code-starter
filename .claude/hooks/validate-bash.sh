@@ -108,71 +108,93 @@ has_dangerous_rm_target() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Helper function for JSON responses (structured output)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+output_block() {
+  local message="$1"
+  local suggestion="${2:-}"
+  if [ -n "$suggestion" ]; then
+    echo "{\"block\":true,\"message\":\"$message\",\"feedback\":\"$suggestion\"}"
+  else
+    echo "{\"block\":true,\"message\":\"$message\"}"
+  fi
+  exit 2
+}
+
+output_warning() {
+  local feedback="$1"
+  echo "{\"feedback\":\"$feedback\"}"
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # BLOCKED PATTERNS - Exit 2 to block
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Destructive rm commands - check for recursive + dangerous target
 # Handles: rm -rf, rm -fr, rm -r -f, rm --recursive --force, etc.
 if has_rm_recursive && has_dangerous_rm_target; then
-  echo "BLOCKED: Recursive delete of protected path" >&2
-  exit 2
+  output_block "Recursive delete of protected path blocked" "Use a more specific path like rm -rf ./specific-directory instead of parent or root paths"
 fi
 
 # Block disk destruction commands (case-insensitive via matches_word on $LOWER)
 if matches_word "mkfs" || matches_word "fdisk" || matches_word "parted"; then
-  echo "BLOCKED: Disk formatting/partitioning command" >&2
-  exit 2
+  output_block "Disk formatting/partitioning command blocked" "Disk operations require manual execution outside Claude Code"
 fi
 
 # Block dd writes to block devices (don't require if=, just check of=/dev/)
 if matches_word "dd" && echo "$LOWER" | grep -qE 'of=[ ]*/dev/'; then
-  echo "BLOCKED: Direct disk write with dd" >&2
-  exit 2
+  output_block "Direct disk write with dd blocked" "Writing to block devices requires manual execution"
 fi
 
 # Block direct writes to block devices via redirection
 if matches "> /dev/sd" || matches "> /dev/nvme" || matches "> /dev/hd" || matches "> /dev/disk"; then
-  echo "BLOCKED: Direct write to block device" >&2
-  exit 2
+  output_block "Direct write to block device blocked" "Block device operations require manual execution"
 fi
 
 # Fork bomb patterns (actual syntax, not just keywords)
 if matches ":(){" || matches ":(){ :|:&"; then
-  echo "BLOCKED: Potential fork bomb detected" >&2
-  exit 2
+  output_block "Potential fork bomb detected" "This pattern could exhaust system resources"
 fi
 
 # Block curl/wget piped to shell (common malware pattern)
 if echo "$LOWER" | grep -qE '(curl|wget)[^|]*\|[^|]*(bash|sh|zsh)'; then
-  echo "BLOCKED: Piping remote content to shell" >&2
-  exit 2
+  output_block "Piping remote content to shell blocked" "Download the script first, review it, then execute: curl -o script.sh URL && cat script.sh && bash script.sh"
 fi
 
 # Block chmod 777 on root (catastrophic regardless of -R flag)
 if echo "$LOWER" | grep -qE 'chmod[^;|&]*[[:space:]]777[[:space:]]+/([[:space:];|&]|$)'; then
-  echo "BLOCKED: Dangerous permission change" >&2
-  exit 2
+  output_block "Dangerous permission change blocked" "chmod 777 on root would make all files world-writable"
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# WARNINGS - Log but allow
+# WARNINGS - Provide feedback but allow
 # ═══════════════════════════════════════════════════════════════════════════════
 
+WARNINGS=""
+
 if matches_word "sudo"; then
-  echo "WARNING: Command uses sudo - review carefully" >&2
+  WARNINGS="${WARNINGS}Using sudo - review output carefully. "
 fi
 
 # Only warn about force flags for destructive commands (rm, mv, cp, git push)
 # Avoids noise from tools that use -f harmlessly
 if echo "$LOWER" | grep -qE '(^|[;&|])[ ]*(rm|mv|cp)[ ]' && (matches "--force" || echo "$LOWER" | grep -qE ' -[a-z]*f'); then
-  echo "NOTE: Destructive command uses force flag" >&2
+  WARNINGS="${WARNINGS}Force flag on destructive command. "
 fi
 if echo "$LOWER" | grep -qE 'git[ ]+push[^;|&]+(-f|--force)'; then
-  echo "WARNING: git push with force flag" >&2
+  WARNINGS="${WARNINGS}Force push will overwrite remote history. "
 fi
 
 if matches_word "eval"; then
-  echo "WARNING: Command uses eval" >&2
+  WARNINGS="${WARNINGS}Using eval - ensure input is trusted. "
+fi
+
+# Output warnings as feedback if any
+if [ -n "$WARNINGS" ]; then
+  # Trim trailing space
+  WARNINGS="${WARNINGS% }"
+  output_warning "$WARNINGS"
 fi
 
 # Allow the command
