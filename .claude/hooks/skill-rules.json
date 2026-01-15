@@ -1,0 +1,92 @@
+{
+  "generate-tests": {
+    "description": "Test generation and TDD workflow",
+    "priority": 9,
+    "triggers": {
+      "keywords": ["test", "tests", "testing", "spec", "tdd", "mock", "coverage", "unit test", "integration test"],
+      "keywordPatterns": ["\\btest(?:s|ing)?\\b", "\\bspec(?:s)?\\b"],
+      "pathPatterns": ["**/*.test.*", "**/*.spec.*", "**/test/**", "**/tests/**", "**/__tests__/**"],
+      "intentPatterns": ["(?:write|add|create|fix|update|generate).*(?:test|spec)", "(?:test|spec).*(?:for|coverage)"]
+    }
+  },
+  "code-review": {
+    "description": "Code review for quality and security",
+    "priority": 8,
+    "triggers": {
+      "keywords": ["review", "code review", "check", "audit", "security"],
+      "keywordPatterns": ["\\breview\\b", "code.?review"],
+      "pathPatterns": [],
+      "intentPatterns": ["(?:review|check|audit).*(?:code|changes|pr|pull request)", "look.*(?:over|at).*(?:code|changes)"]
+    }
+  },
+  "refactor-code": {
+    "description": "Refactoring without behavior changes",
+    "priority": 7,
+    "triggers": {
+      "keywords": ["refactor", "cleanup", "clean up", "simplify", "restructure", "reorganize"],
+      "keywordPatterns": ["\\brefactor(?:ing)?\\b", "clean.?up"],
+      "pathPatterns": [],
+      "intentPatterns": ["(?:refactor|simplify|cleanup|clean up|restructure).*(?:code|function|class|module)"]
+    }
+  },
+  "explain-code": {
+    "description": "Explain how code works",
+    "priority": 6,
+    "triggers": {
+      "keywords": ["explain", "understand", "how does", "what does", "walk through", "walkthrough"],
+      "keywordPatterns": ["\\bexplain\\b", "how.*work"],
+      "pathPatterns": [],
+      "intentPatterns": ["(?:explain|understand|tell me|show me).*(?:how|what).*(?:work|do|mean)", "what.*(?:is|does).*(?:this|code)"]
+    }
+  },
+  "review-mr": {
+    "description": "Merge request / pull request review",
+    "priority": 8,
+    "triggers": {
+      "keywords": ["pr", "pull request", "merge request", "mr", "branch review"],
+      "keywordPatterns": ["\\bpr\\b", "\\bmr\\b", "pull.?request", "merge.?request"],
+      "pathPatterns": [],
+      "intentPatterns": ["review.*(?:pr|mr|pull|merge)", "(?:pr|mr|pull|merge).*review"]
+    }
+  },
+  "changelog-writer": {
+    "description": "Maintain CHANGELOG.md",
+    "priority": 5,
+    "triggers": {
+      "keywords": ["changelog", "release notes", "what changed", "version history"],
+      "keywordPatterns": ["\\bchangelog\\b", "release.?notes"],
+      "pathPatterns": ["**/CHANGELOG.md", "**/CHANGELOG"],
+      "intentPatterns": ["(?:update|add|write).*changelog", "changelog.*(?:entry|update)"]
+    }
+  },
+  "release-checklist": {
+    "description": "Final quality gate before shipping",
+    "priority": 9,
+    "triggers": {
+      "keywords": ["release", "ship", "deploy", "production", "go live", "launch"],
+      "keywordPatterns": ["\\brelease\\b", "\\bship(?:ping)?\\b", "\\bdeploy\\b"],
+      "pathPatterns": [],
+      "intentPatterns": ["(?:ready|prepare|check).*(?:release|ship|deploy|production)", "(?:release|ship|deploy).*(?:checklist|ready)"]
+    }
+  },
+  "risk-register": {
+    "description": "Document risks for sensitive changes",
+    "priority": 8,
+    "triggers": {
+      "keywords": ["risk", "risks", "auth", "authentication", "migration", "breaking change", "security concern"],
+      "keywordPatterns": ["\\brisk(?:s)?\\b", "\\bauth(?:entication)?\\b"],
+      "pathPatterns": ["**/auth/**", "**/migrations/**", "**/security/**"],
+      "intentPatterns": ["(?:document|assess|evaluate).*risk", "risk.*(?:for|of|in)"]
+    }
+  },
+  "wiggum": {
+    "description": "Autonomous implementation from spec",
+    "priority": 10,
+    "triggers": {
+      "keywords": ["implement", "build", "create feature", "autonomous", "spec", "prd", "specification"],
+      "keywordPatterns": ["\\bimplement\\b", "\\bbuild\\b.*feature"],
+      "pathPatterns": ["**/spec/**", "**/specs/**", "**/prd/**"],
+      "intentPatterns": ["(?:implement|build|create).*(?:feature|spec|prd|from scratch)", "autonomous.*(?:implement|build|create)"]
+    }
+  }
+}
