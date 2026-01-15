@@ -115,9 +115,12 @@ cmd_adopt() {
 cmd_update() {
   echo -e "${BLUE}Checking for updates...${NC}"
 
-  # Get latest release tag from GitHub API
+  # Get latest release info from GitHub API
+  local release_json
+  release_json=$(curl -fsSL "https://api.github.com/repos/zbruhnke/claude-code-starter/releases/latest" 2>/dev/null)
+
   local latest
-  latest=$(curl -fsSL "https://api.github.com/repos/zbruhnke/claude-code-starter/releases/latest" 2>/dev/null | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
+  latest=$(echo "$release_json" | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
 
   if [ -z "$latest" ]; then
     echo -e "${RED}Error: Could not fetch latest version from GitHub${NC}" >&2
@@ -147,17 +150,74 @@ cmd_update() {
     install_target="$INSTALL_DIR"
   fi
 
-  echo -e "Downloading ${GREEN}$latest${NC}..."
+  # Create temp directory with cleanup trap
   local tmp_dir
   tmp_dir=$(mktemp -d)
   trap "rm -rf '$tmp_dir'" EXIT
 
-  curl -fsSL "https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/${latest}.tar.gz" | tar -xz -C "$tmp_dir"
+  local tarball="$tmp_dir/release.tar.gz"
+  local tarball_url="https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/${latest}.tar.gz"
 
-  # Replace installation
+  echo -e "Downloading ${GREEN}$latest${NC}..."
+  if ! curl -fsSL "$tarball_url" -o "$tarball"; then
+    echo -e "${RED}Error: Failed to download release${NC}" >&2
+    exit 1
+  fi
+
+  # Try to extract expected checksum from release notes
+  # Release notes contain: SHA256  setup.sh (we need tarball checksum from a checksums file if available)
+  # For now, compute and display for user verification
+  local actual_sha256
+  if command -v sha256sum >/dev/null 2>&1; then
+    actual_sha256=$(sha256sum "$tarball" | cut -d' ' -f1)
+  elif command -v shasum >/dev/null 2>&1; then
+    actual_sha256=$(shasum -a 256 "$tarball" | cut -d' ' -f1)
+  else
+    echo -e "${YELLOW}Warning: Cannot verify checksum (sha256sum/shasum not found)${NC}"
+    actual_sha256=""
+  fi
+
+  # Try to fetch published checksum from release assets or a checksums file
+  local expected_sha256=""
+  local checksums_url="https://github.com/zbruhnke/claude-code-starter/releases/download/${latest}/checksums.txt"
+  local checksums_content
+  checksums_content=$(curl -fsSL "$checksums_url" 2>/dev/null || true)
+  if [ -n "$checksums_content" ]; then
+    expected_sha256=$(echo "$checksums_content" | grep "release.tar.gz\|${latest}.tar.gz" | awk '{print $1}' | head -1)
+  fi
+
+  if [ -n "$actual_sha256" ]; then
+    if [ -n "$expected_sha256" ]; then
+      # We have both - verify
+      if [ "$actual_sha256" != "$expected_sha256" ]; then
+        echo -e "${RED}SECURITY ERROR: Checksum mismatch!${NC}" >&2
+        echo "Expected: $expected_sha256" >&2
+        echo "Got:      $actual_sha256" >&2
+        echo -e "${RED}Aborting update. This could indicate tampering.${NC}" >&2
+        exit 1
+      fi
+      echo -e "${GREEN}Checksum verified.${NC}"
+    else
+      # No published checksum - warn and require confirmation
+      echo -e "${YELLOW}Warning: No published checksum available for verification.${NC}"
+      echo "Downloaded tarball SHA256: $actual_sha256"
+      echo ""
+      echo -e "${YELLOW}Cannot verify download integrity.${NC}"
+      read -p "Continue without verification? [y/N] " confirm
+      if [[ ! "$confirm" =~ ^[Yy] ]]; then
+        echo "Aborted. Consider downloading manually and verifying."
+        exit 0
+      fi
+    fi
+  fi
+
+  # Extract the verified tarball
+  echo "Extracting..."
+  tar -xzf "$tarball" -C "$tmp_dir"
+
+  # Find extracted directory
   local extracted_dir="$tmp_dir/claude-code-starter-${latest#v}"
   if [ ! -d "$extracted_dir" ]; then
-    # Try without 'v' prefix
     extracted_dir="$tmp_dir/claude-code-starter-${latest}"
   fi
 
