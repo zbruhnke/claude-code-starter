@@ -62,6 +62,16 @@ parse_tag_name() {
   fi
 }
 
+# Read input from /dev/tty if available, otherwise stdin
+# This allows the script to work in non-interactive contexts (CI, pipes)
+_read_input() {
+  if [ -t 0 ]; then
+    read -r "$@" </dev/tty
+  else
+    read -r "$@"
+  fi
+}
+
 print_help() {
   cat << 'EOF'
 claude-code-starter (ccs) - Production-ready Claude Code configuration
@@ -152,7 +162,9 @@ cmd_update() {
     echo -e "${YELLOW}Warning: Not installed in default location ($install_target)${NC}"
     echo "Current location: $INSTALL_DIR"
     echo ""
-    read -p "Update anyway? [y/N] " confirm
+    echo -n "Update anyway? [y/N] "
+    local confirm=""
+    _read_input confirm
     if [[ ! "$confirm" =~ ^[Yy] ]]; then
       echo "Aborted."
       exit 0
@@ -213,7 +225,9 @@ cmd_update() {
       echo "Downloaded tarball SHA256: $actual_sha256"
       echo ""
       echo -e "${YELLOW}Cannot verify download integrity.${NC}"
-      read -p "Continue without verification? [y/N] " confirm
+      echo -n "Continue without verification? [y/N] "
+      local confirm=""
+      _read_input confirm
       if [[ ! "$confirm" =~ ^[Yy] ]]; then
         echo "Aborted. Consider downloading manually and verifying."
         exit 0

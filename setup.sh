@@ -353,42 +353,36 @@ print_info "Creating .claude/settings.json..."
 CORE_SETTINGS="$SCRIPT_DIR/.claude/core-settings.json"
 STACK_SETTINGS="$SCRIPT_DIR/stacks/$STACK/stack-settings.json"
 
-if [ -f "$CORE_SETTINGS" ]; then
-  if command -v jq &> /dev/null && [ -f "$STACK_SETTINGS" ]; then
-    # Merge core + stack settings using jq
-    # - Concatenate allow arrays (core + stack-specific)
-    # - Concatenate deny arrays (core + stack-specific)
-    # - Merge env objects (stack overrides core)
-    # - Keep hooks from core (all stacks share the same hooks)
-    jq -s '
-      .[0] as $core | .[1] as $stack |
-      {
-        permissions: {
-          allow: ($core.permissions.allow + $stack.permissions.allow),
-          deny: ($core.permissions.deny + $stack.permissions.deny)
-        },
-        hooks: $core.hooks,
-        env: (($core.env // {}) + ($stack.env // {}))
-      } | if .env == {} then del(.env) else . end
-    ' "$CORE_SETTINGS" "$STACK_SETTINGS" > "$TARGET_DIR/.claude/settings.json"
-    print_success "Created .claude/settings.json (merged core + $STACK)"
-  else
-    # No jq or no stack settings - use core settings directly
-    cp "$CORE_SETTINGS" "$TARGET_DIR/.claude/settings.json"
-    if [ ! -f "$STACK_SETTINGS" ]; then
-      print_success "Created .claude/settings.json (core settings)"
-    else
-      print_warning "jq not found - using core settings (install jq for stack-specific permissions)"
-    fi
-  fi
+if [ ! -f "$CORE_SETTINGS" ]; then
+  print_error "core-settings.json not found - installation may be corrupted"
+  exit 1
+fi
+
+if command -v jq &> /dev/null && [ -f "$STACK_SETTINGS" ]; then
+  # Merge core + stack settings using jq
+  # - Concatenate allow arrays (core + stack-specific)
+  # - Concatenate deny arrays (core + stack-specific)
+  # - Merge env objects (stack overrides core)
+  # - Keep hooks from core (all stacks share the same hooks)
+  jq -s '
+    .[0] as $core | .[1] as $stack |
+    {
+      permissions: {
+        allow: ($core.permissions.allow + $stack.permissions.allow),
+        deny: ($core.permissions.deny + $stack.permissions.deny)
+      },
+      hooks: $core.hooks,
+      env: (($core.env // {}) + ($stack.env // {}))
+    } | if .env == {} then del(.env) else . end
+  ' "$CORE_SETTINGS" "$STACK_SETTINGS" > "$TARGET_DIR/.claude/settings.json"
+  print_success "Created .claude/settings.json (merged core + $STACK)"
 else
-  # Fallback: copy legacy stack settings.json if it exists
-  if [ -f "$SCRIPT_DIR/stacks/$STACK/settings.json" ]; then
-    cp "$SCRIPT_DIR/stacks/$STACK/settings.json" "$TARGET_DIR/.claude/settings.json"
-    print_success "Created .claude/settings.json ($STACK preset)"
-  elif [ -f "$SCRIPT_DIR/.claude/settings.json" ]; then
-    cp "$SCRIPT_DIR/.claude/settings.json" "$TARGET_DIR/.claude/settings.json"
-    print_success "Created .claude/settings.json (default)"
+  # No jq or no stack settings - use core settings directly
+  cp "$CORE_SETTINGS" "$TARGET_DIR/.claude/settings.json"
+  if [ ! -f "$STACK_SETTINGS" ]; then
+    print_success "Created .claude/settings.json (core settings)"
+  else
+    print_warning "jq not found - using core settings (install jq for stack-specific permissions)"
   fi
 fi
 track_file "$TARGET_DIR/.claude/settings.json"

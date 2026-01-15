@@ -8,9 +8,13 @@ This document describes what is and isn't protected by this configuration.
 
 ### Files (via `settings.json` deny rules)
 - `.env` and `.env.*` files (Read/Edit/Write blocked)
+- `**/secrets/**` directories (Read blocked)
+- **Ruby**: `config/credentials.yml.enc`, `config/master.key`
+- **Elixir**: `config/prod.secret.exs`
 
 ### Bash Commands (via `validate-bash.sh` PreToolUse hook)
-The hook provides runtime validation before commands execute:
+
+**The hook is the real enforcement layer.** It provides runtime validation before commands execute:
 - Destructive recursive rm: `rm -rf /`, `rm -rf ~`, `rm -rf .`, `rm -rf ../`
 - Fork bombs (`:(){}` patterns)
 - Disk formatting (`mkfs`, `fdisk`, `parted`)
@@ -23,11 +27,19 @@ The hook also **warns** (but allows) on:
 - Force flags (`-f`, `--force`) on destructive commands
 - `eval` usage
 
-### Stack-Specific Protections
-When using stack presets (`stacks/*/settings.json`), additional protections are enabled:
-- **All stacks**: `Read(**/secrets/**)`
-- **Ruby**: `config/credentials.yml.enc`, `config/master.key` (Rails encrypted credentials)
-- **Elixir**: `config/prod.secret.exs`
+### Command Deny Rules (Coarse Heuristics)
+
+The `settings.json` file also contains command deny patterns like `Bash(rm -rf:*)`. These are **coarse heuristics only** - they catch obvious patterns but are easily bypassed:
+
+```bash
+# Blocked by deny rule
+rm -rf /
+
+# NOT blocked (variable expansion)
+X=/; rm -rf $X
+```
+
+**Do not rely on these patterns for security.** They exist to catch accidental mistakes, not malicious intent. The `validate-bash.sh` hook is the real enforcement layer.
 
 ## NOT Protected (Common Misconceptions)
 
@@ -58,20 +70,24 @@ To add these protections, edit `.claude/settings.json`:
 
 ## Defense Layers
 
-1. **Static permissions** (`settings.json` deny rules)
-   - Blocks file access (`.env` files)
+1. **File deny rules** (`settings.json` permissions.deny)
+   - Reliably blocks file access (`.env`, secrets directories)
    - Pattern-matched before tool execution
    - Cannot be bypassed by Claude
 
-2. **Bash validation hook** (`validate-bash.sh`)
-   - Primary defense for command safety
-   - Runs before Bash commands execute
+2. **Bash validation hook** (`validate-bash.sh`) - **Primary defense for commands**
+   - Runs before every Bash command executes
+   - Analyzes actual command structure, not just pattern matching
    - Requires `jq` for JSON parsing (blocks all commands if jq missing)
    - Normalizes whitespace to prevent bypass attempts
    - Returns structured JSON with blocking reason and suggestions
-   - Also **warns** (but doesn't block) on: `sudo`, `--force`/`-f` flags, `eval`
 
-3. **Claudeignore** (`.claudeignore`)
+3. **Command deny rules** (`settings.json` Bash patterns) - **Coarse heuristics only**
+   - Catches obvious dangerous patterns (`rm -rf /`, `sudo`, `curl | bash`)
+   - Easily bypassed via variable expansion, encoding, etc.
+   - Exists as a first-pass filter, not real security
+
+4. **Claudeignore** (`.claudeignore`)
    - Prevents files from appearing in Claude's context
    - Reduces accidental exposure
    - **Not a security boundary** - Claude can still attempt to read files

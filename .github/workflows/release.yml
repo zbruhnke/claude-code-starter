@@ -31,7 +31,7 @@ jobs:
 
       - name: Validate JSON files
         run: |
-          for f in .claude/settings.json stacks/*/settings.json; do
+          for f in .claude/settings.json .claude/core-settings.json stacks/*/stack-settings.json; do
             jq . "$f" > /dev/null
           done
 
@@ -79,12 +79,40 @@ jobs:
         id: checksums
         run: |
           echo "Generating SHA256 checksums..."
+
+          # Generate checksums for key files
           SETUP_SHA=$(sha256sum setup.sh | cut -d' ' -f1)
           ADOPT_SHA=$(sha256sum adopt.sh | cut -d' ' -f1)
           REVIEW_SHA=$(sha256sum review-mr.sh | cut -d' ' -f1)
+
+          # Generate checksum for the release tarball (what install.sh downloads)
+          # The tarball name follows GitHub's pattern: {repo}-{version-without-v}.tar.gz
+          VERSION="${{ steps.version.outputs.version }}"
+          TARBALL_NAME="claude-code-starter-${VERSION#v}.tar.gz"
+
+          # Download the tarball that GitHub auto-generates
+          curl -fsSL "https://github.com/${{ github.repository }}/archive/refs/tags/${VERSION}.tar.gz" -o "$TARBALL_NAME"
+          TARBALL_SHA=$(sha256sum "$TARBALL_NAME" | cut -d' ' -f1)
+
+          # Create checksums.txt file (this is what ccs update looks for)
+          cat > checksums.txt << EOF
+          # SHA256 checksums for ${{ steps.version.outputs.version }}
+          # Verify with: sha256sum -c checksums.txt (Linux) or shasum -a 256 -c checksums.txt (macOS)
+          $TARBALL_SHA  $TARBALL_NAME
+          $TARBALL_SHA  release.tar.gz
+          $SETUP_SHA  setup.sh
+          $ADOPT_SHA  adopt.sh
+          $REVIEW_SHA  review-mr.sh
+          EOF
+
+          echo "checksums.txt contents:"
+          cat checksums.txt
+
+          # Output for use in release notes
           echo "setup_sha=$SETUP_SHA" >> $GITHUB_OUTPUT
           echo "adopt_sha=$ADOPT_SHA" >> $GITHUB_OUTPUT
           echo "review_sha=$REVIEW_SHA" >> $GITHUB_OUTPUT
+          echo "tarball_sha=$TARBALL_SHA" >> $GITHUB_OUTPUT
 
       - name: Generate release notes
         id: notes
@@ -149,5 +177,7 @@ jobs:
           draft: false
           # Only mark as pre-release if version contains -alpha, -beta, -rc, etc.
           prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          # Upload checksums.txt as release asset (required for ccs update verification)
+          files: checksums.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

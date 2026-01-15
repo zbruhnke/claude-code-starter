@@ -189,7 +189,7 @@ jobs:
 
       - name: Validate all JSON files
         run: |
-          for f in .claude/settings.json stacks/*/settings.json; do
+          for f in .claude/settings.json .claude/core-settings.json stacks/*/stack-settings.json; do
             echo "Validating $f..."
             jq . "$f" > /dev/null
           done
