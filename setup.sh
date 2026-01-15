@@ -27,7 +27,9 @@ if [ -d "$TARGET_DIR/.claude" ]; then
 fi
 
 # Cleanup function for error handling
-# Note: Does basic path validation but cannot fully prevent race conditions
+# Note: Best-effort cleanup only. Does NOT use atomic staging.
+# TOCTOU risk: filesystem can change between path check and deletion.
+# Don't run as root. Don't point TARGET_DIR at shared/untrusted paths.
 cleanup_on_error() {
   if [ "$SETUP_COMPLETE" = true ]; then
     return
@@ -37,7 +39,7 @@ cleanup_on_error() {
   echo -e "${RED}Setup failed. Cleaning up...${NC}"
 
   # Remove created files
-  # Basic check that file path is under TARGET_DIR (not foolproof against races)
+  # Best-effort path check - see header comment for limitations
   for file in "${CREATED_FILES[@]}"; do
     local resolved
     resolved=$(cd "$(dirname "$file")" 2>/dev/null && pwd)/$(basename "$file") || continue
@@ -358,7 +360,21 @@ if [ ! -f "$CORE_SETTINGS" ]; then
   exit 1
 fi
 
-if command -v jq &> /dev/null && [ -f "$STACK_SETTINGS" ]; then
+if [ -f "$STACK_SETTINGS" ]; then
+  # Stack-specific settings exist - jq is required to merge them
+  if ! command -v jq &> /dev/null; then
+    print_error "jq is required to apply $STACK stack settings"
+    echo ""
+    echo -e "  ${YELLOW}Stack presets include pre-approved commands (npm, cargo, mix, etc.)${NC}"
+    echo -e "  ${YELLOW}Without jq, these cannot be merged into settings.json.${NC}"
+    echo ""
+    echo -e "  ${BOLD}Install jq:${NC}"
+    echo -e "    macOS:        ${DIM}brew install jq${NC}"
+    echo -e "    Debian/Ubuntu: ${DIM}apt install jq${NC}"
+    echo -e "    Fedora/RHEL:  ${DIM}dnf install jq${NC}"
+    echo ""
+    exit 1
+  fi
   # Merge core + stack settings using jq
   # - Concatenate allow arrays (core + stack-specific)
   # - Concatenate deny arrays (core + stack-specific)
@@ -377,23 +393,9 @@ if command -v jq &> /dev/null && [ -f "$STACK_SETTINGS" ]; then
   ' "$CORE_SETTINGS" "$STACK_SETTINGS" > "$TARGET_DIR/.claude/settings.json"
   print_success "Created .claude/settings.json (merged core + $STACK)"
 else
-  # No jq or no stack settings - use core settings directly
+  # No stack settings - use core settings directly (generic stack)
   cp "$CORE_SETTINGS" "$TARGET_DIR/.claude/settings.json"
-  if [ ! -f "$STACK_SETTINGS" ]; then
-    print_success "Created .claude/settings.json (core settings)"
-  else
-    # Make it very clear that stack permissions are missing
-    print_error "jq not installed - stack-specific permissions NOT applied"
-    echo ""
-    echo -e "  ${YELLOW}Your $STACK commands (npm, cargo, mix, etc.) are NOT pre-approved.${NC}"
-    echo -e "  ${YELLOW}Claude will prompt for permission on every command.${NC}"
-    echo ""
-    echo -e "  ${BOLD}To fix:${NC}"
-    echo -e "    1. Install jq: ${DIM}brew install jq${NC} (macOS) or ${DIM}apt install jq${NC} (Debian/Ubuntu)"
-    echo -e "    2. Re-run setup or: ${DIM}claude-code-starter adopt stack${NC}"
-    echo ""
-    print_warning "Continuing with core settings only"
-  fi
+  print_success "Created .claude/settings.json (core settings)"
 fi
 track_file "$TARGET_DIR/.claude/settings.json"
 
