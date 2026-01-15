@@ -20,6 +20,12 @@ YELLOW='\033[1;33m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+# Create temp files with cleanup
+TEMP_DIR=$(mktemp -d)
+TEST_OUTPUT="$TEMP_DIR/test-output.txt"
+LINT_OUTPUT="$TEMP_DIR/lint-output.txt"
+trap 'rm -rf "$TEMP_DIR"' EXIT
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CHECK: Is this a wiggum session?
 # ─────────────────────────────────────────────────────────────────────────────
@@ -105,12 +111,12 @@ fi
 
 if [ -n "$TEST_CMD" ]; then
   echo -e "  Running: $TEST_CMD"
-  if $TEST_CMD > /tmp/wiggum-test-output.txt 2>&1; then
+  if $TEST_CMD > $TEST_OUTPUT 2>&1; then
     echo -e "  ${GREEN}✓${NC} Tests passed"
   else
     echo -e "  ${RED}✗${NC} Tests failed"
     echo ""
-    tail -20 /tmp/wiggum-test-output.txt
+    tail -20 $TEST_OUTPUT
     FAILED=1
   fi
 else
@@ -140,12 +146,12 @@ fi
 
 if [ -n "$LINT_CMD" ]; then
   echo -e "  Running: $LINT_CMD"
-  if $LINT_CMD > /tmp/wiggum-lint-output.txt 2>&1; then
+  if $LINT_CMD > $LINT_OUTPUT 2>&1; then
     echo -e "  ${GREEN}✓${NC} Lint passed"
   else
     echo -e "  ${RED}✗${NC} Lint failed"
     echo ""
-    tail -20 /tmp/wiggum-lint-output.txt
+    tail -20 $LINT_OUTPUT
     FAILED=1
   fi
 else

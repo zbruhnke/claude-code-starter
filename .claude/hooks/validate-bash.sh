@@ -109,22 +109,23 @@ has_dangerous_rm_target() {
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Helper function for JSON responses (structured output)
+# Uses jq for proper escaping to avoid JSON injection
 # ═══════════════════════════════════════════════════════════════════════════════
 
 output_block() {
   local message="$1"
   local suggestion="${2:-}"
   if [ -n "$suggestion" ]; then
-    echo "{\"block\":true,\"message\":\"$message\",\"feedback\":\"$suggestion\"}"
+    jq -cn --arg msg "$message" --arg fb "$suggestion" '{block: true, message: $msg, feedback: $fb}'
   else
-    echo "{\"block\":true,\"message\":\"$message\"}"
+    jq -cn --arg msg "$message" '{block: true, message: $msg}'
   fi
   exit 2
 }
 
 output_warning() {
   local feedback="$1"
-  echo "{\"feedback\":\"$feedback\"}"
+  jq -cn --arg fb "$feedback" '{feedback: $fb}'
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
