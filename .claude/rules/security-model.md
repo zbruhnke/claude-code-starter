@@ -6,22 +6,22 @@ This document describes what is and isn't protected by this configuration.
 
 ## Actually Protected
 
-The following are blocked from Claude's access via `settings.json` deny rules:
+### Files (via `settings.json` deny rules)
+- `.env` and `.env.*` files (Read/Edit/Write blocked)
 
-### Files (Read/Edit/Write blocked)
-- `.env` and `.env.*` files
-
-### Bash Commands (blocked patterns)
-- Destructive commands: `rm -rf /`, `rm -rf ~`, `rm -rf .`
-- Privilege escalation: `sudo`
-- Dangerous permissions: `chmod 777`
-- Remote code execution: `curl | bash`, `curl | sh`, `wget | bash`, `wget | sh`
-
-### Additional Runtime Validation (validate-bash.sh hook)
+### Bash Commands (via `validate-bash.sh` PreToolUse hook)
+The hook provides runtime validation before commands execute:
+- Destructive recursive rm: `rm -rf /`, `rm -rf ~`, `rm -rf .`, `rm -rf ../`
 - Fork bombs (`:(){}` patterns)
 - Disk formatting (`mkfs`, `fdisk`, `parted`)
 - Direct disk writes (`dd if=... of=/dev/...`)
-- Path traversal in rm commands (catches `rm -rf ../` pattern, not all variations)
+- Piped shell execution: `curl | bash`, `wget | sh`
+- Dangerous permissions: `chmod 777 /`
+
+The hook also **warns** (but allows) on:
+- `sudo` usage
+- Force flags (`-f`, `--force`) on destructive commands
+- `eval` usage
 
 ### Stack-Specific Protections
 When using stack presets (`stacks/*/settings.json`), additional protections are enabled:
@@ -59,15 +59,16 @@ To add these protections, edit `.claude/settings.json`:
 ## Defense Layers
 
 1. **Static permissions** (`settings.json` deny rules)
-   - First line of defense
+   - Blocks file access (`.env` files)
    - Pattern-matched before tool execution
    - Cannot be bypassed by Claude
 
 2. **Bash validation hook** (`validate-bash.sh`)
+   - Primary defense for command safety
    - Runs before Bash commands execute
    - Requires `jq` for JSON parsing (blocks all commands if jq missing)
    - Normalizes whitespace to prevent bypass attempts
-   - Catches some destructive patterns not in deny list
+   - Returns structured JSON with blocking reason and suggestions
    - Also **warns** (but doesn't block) on: `sudo`, `--force`/`-f` flags, `eval`
 
 3. **Claudeignore** (`.claudeignore`)
