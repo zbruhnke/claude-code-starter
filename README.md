@@ -202,14 +202,16 @@ cd your-project
 ```bash
 # Download and verify (recommended)
 VERSION="v0.8.3"  # Check releases for latest
-curl -fsSL "https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/${VERSION}.tar.gz" -o claude-code-starter.tar.gz
+TARBALL="claude-code-starter-${VERSION#v}.tar.gz"
+
+curl -fsSL "https://github.com/zbruhnke/claude-code-starter/archive/refs/tags/${VERSION}.tar.gz" -o "$TARBALL"
 curl -fsSL "https://github.com/zbruhnke/claude-code-starter/releases/download/${VERSION}/checksums.txt" -o checksums.txt
 
 # Verify checksum before extracting
-grep "release.tar.gz" checksums.txt | sed "s/release.tar.gz/claude-code-starter.tar.gz/" | sha256sum -c -
+grep "$TARBALL" checksums.txt | sha256sum -c -
 
 # Extract and run
-tar -xzf claude-code-starter.tar.gz
+tar -xzf "$TARBALL"
 cd your-project
 ~/claude-code-starter-${VERSION#v}/setup.sh
 ```
@@ -268,7 +270,7 @@ curl -fsSL https://raw.githubusercontent.com/zbruhnke/claude-code-starter/main/i
 
 **Upgrade to latest:**
 ```bash
-claude-code-starter update
+ccs update
 ```
 
 This downloads the latest release while preserving your project's `CLAUDE.md` and `.claude/settings.local.json`.

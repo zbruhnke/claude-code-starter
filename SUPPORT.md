@@ -21,9 +21,9 @@
 - Test manually: `echo '{"tool_name":"Bash","tool_input":{"command":"ls"}}' | .claude/hooks/validate-bash.sh`
 
 **setup.sh fails:**
-- Requires Bash 4.0+: `bash --version`
-- Requires jq: `jq --version`
-- macOS users: `brew install bash jq`
+- Requires Bash 3.2+ (macOS default works): `bash --version`
+- Requires jq for stack presets: `jq --version`
+- Install jq: `brew install jq` (macOS) or `apt install jq` (Debian/Ubuntu)
 
 ## Reporting Issues
 

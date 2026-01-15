@@ -64,7 +64,7 @@ done
 
 ### General Guidelines
 
-- Shell scripts must work on Bash 4.0+ (macOS ships with older Bash)
+- Shell scripts must work on Bash 3.2+ (macOS default)
 - Use `$CLAUDE_PROJECT_DIR` instead of relative paths in hooks
 - Test on both Linux and macOS if possible
 - Keep documentation in sync with code

@@ -84,6 +84,8 @@ The base `settings.json` includes:
 ]
 ```
 
+> **Note:** Patterns like `curl:*|bash` are coarse heuristics for common footguns, not a security boundary. They can be bypassed with variable construction, encoding, or process substitution. Real enforcement happens in `validate-bash.sh`; see `.claude/rules/security-model.md` for what is and isn't protected.
+
 ## Permission Philosophy
 
 Permissions follow a deliberate escalation model:
