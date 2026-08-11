@@ -1,3 +1,5 @@
+
+
 # Claude Code Starter
 
 [![CI](https://github.com/zbruhnke/claude-code-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/zbruhnke/claude-code-starter/actions/workflows/ci.yml)
@@ -158,6 +160,8 @@ ccs adopt agents       # Just agents
 ccs adopt precommit    # Pre-commit review hook
 ccs adopt security     # Security config only
 ccs adopt stack        # Stack-specific preset
+ccs adopt skill code-review  # Install a specific skill
+ccs adopt agent researcher   # Install a specific agent
 ```
 
 > **Note:** `adopt all` installs core components but NOT stack presets or precommit hook (since those are project-specific choices). Use interactive mode or add them explicitly.
